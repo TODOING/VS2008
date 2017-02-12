@@ -1,0 +1,1 @@
+int TemplateOperation(const char *pszSrcFile, const char *pszDstFile, int a);
