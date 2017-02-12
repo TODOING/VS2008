@@ -2,6 +2,7 @@
 #define PCA_H
 
 #include "matrix_eigenvalue.h"
+#include "gdal.h"
 class GDALDataset;
 class PCAStatisticsIO;
 
@@ -23,7 +24,7 @@ public:
 	int ExecutePCA(const char* pca_file, int pca_band_count = -1, bool is_covariance = true, 
 		bool is_like_envi = true, const char* format = "GTiff");
 
-	int ExecutePCA(const char* pca_file, const char *statistics_file, int pca_band_count = -1, bool is_covariance = true, 
+	int ExecutePCA(const char* pca_file, const char *statistics_file, int pca_band_count = -1, GDALDataType dst_type = GDT_Float64, bool is_covariance = true, 
 		bool is_like_envi = true, const char* format = "GTiff");
 
 	/**
@@ -34,7 +35,7 @@ public:
 	* @param pszFormat			输出文件格式，默认为GeoTiff格式
 	* @return 返回代码
 	*/
-	int ExecuteInversePCA(const char* inverse_pca_file, const char *statistics_file,  const char* format = "GTiff");
+	int ExecuteInversePCA(const char* inverse_pca_file, const char *statistics_file,  GDALDataType dst_type = GDT_Float64, const char* format = "GTiff");
 
 private:
 	/**
@@ -70,7 +71,25 @@ private:
 	*/
 	int CalcSubAvg(const char* pca_file);
 
-	int LinearCombination(const char *pca_file, MyMatrix &select_eigenvectors, double *mean, const char *format);
+	template <typename T>
+	int CalcSubAvg(const char* pca_file);
+
+	// TODO：写成模板
+	int LinearCombination(const char *dst_file, MyMatrix &select_eigenvectors, double *mean, const char *format);
+
+
+	template <typename T>
+	int LinearCombination(const char *dst_file, MyMatrix &select_eigenvectors,  double *mean, const char *format);
+
+	template <typename T>
+	void CoreCalcInt16OrInt32(double *src_buffer_data, T *dst_buffer_data, double *mean, int dst_band_count, int block_sample);
+	template <typename T>
+	void CoreCalcInt16OrInt32(double *src_buffer_data, T *dst_buffer_data, int dst_band_count, int block_sample);
+	
+	template <typename T>
+	void CoreCalcFloat32OrFloat64(double *src_buffer_data, T *dst_buffer_data, double *mean, int dst_band_count, int block_sample);
+	template <typename T>
+	void CoreCalcFloat32OrFloat64(double *src_buffer_data, T *dst_buffer_data, int dst_band_count, int block_sample);
 
 private:	
 	const char *m_src_file;		/*<! 要变换的文件路径 */
@@ -90,6 +109,8 @@ private:
 	MyMatrix m_eigenvectors;		/*<! 相关系数矩阵(协方差矩阵)的特征向量 */
 	MyMatrix m_select_eigenvectors; /*<! 构建选择后的特征向量矩阵 */
 	PCAStatisticsIO *m_sta_io;
+	
+	GDALDataType m_dst_type;	// 目标数据类型，参照gdal.h中的GDALDataType, // 只允许保存（GDT_Int16, GDT_Int32, GDT_Float32, GDT_Float64等4种类型）
 };
 
 #endif// PCA_H

@@ -5,10 +5,29 @@
 using namespace Eigen;
 
 // 标准矩阵，数值存在矩阵中
-typedef Eigen::Matrix< double, Dynamic, Dynamic, RowMajor> MyMatrix;
+typedef Eigen::Matrix<double, Dynamic, Dynamic, RowMajor> MyMatrix;
 
 // 标准列向量，数值存在矩阵中
-typedef Eigen::Matrix< double, Dynamic, 1> MyVector;
+typedef Eigen::Matrix<double, Dynamic, 1> MyVector;
+
+// 标准矩阵，数值存在外部
+typedef Eigen::Map<MyMatrix> MyExtMatrix;
+
+// 标准矩阵，数值存在外部
+typedef Eigen::Map<MyVector> MyExtVector;
+
+//void MatrixToArray(MyMatrix &matrix, double *array)
+//{
+//	int rows = matrix.rows();
+//	int cols = matrix.cols();
+//
+//	for (int i = 0; i < rows; i++)
+//	{
+//		for (int j = 0; j < cols; j++)
+//			array[i*rows+j] = matrix(i, j);
+//	}
+//}
+
 
 class MatrixEigenvalue
 {
@@ -38,7 +57,6 @@ private:
 	* @return 返回false表示超过迭代jt次仍未达到精度要求，返回true表示正常返回
 	*/   
 	static bool Jacobi(double symmetry_matrix[], int dim, double eigenvectors[], double eps, int jt);
-
 
 };
 

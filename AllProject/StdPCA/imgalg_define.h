@@ -199,6 +199,10 @@ typedef float			DT_32F;
 /*! 64F */
 typedef double			DT_64F;
 
+#ifndef BYTE
+#define  BYTE(value, min, dist) ((byte)(255.0*(value-min)/dist+0.5))
+#endif
+
 /*! 成功执行 */
 const int RE_SUCCESS		= 0;
 /*! 文件不存在 */
@@ -227,5 +231,8 @@ const int RE_BANDCOUNTERROR		= 11;
 const int RE_NOPROJECTION		= 12;
 /*! 投影不一致 */
 const int RE_PROJECTIONDIFF		= 13;
+
+/*! 图像数据类型不支持 */
+const int RE_FILETYPNOSUPPORT	= 14;
 
 #endif// IMGALG_DEFINE_H

@@ -12,6 +12,7 @@ PCA::PCA(const char *src_file)
 	m_relativity = NULL;
 	m_src_dataset = NULL;
 	m_statistics = NULL;
+	m_dst_type = GDT_Float64;
 
 	m_is_covariance = true;
 	m_src_file = src_file;
@@ -52,7 +53,21 @@ int PCA::ExecutePCA(const char* pca_file, int pca_band_count /* = -1 */, bool is
 
 	if (is_like_envi)
 	{
-		return_value = CalcSubAvg(pca_file);
+		if (m_dst_type == GDT_Byte)
+			return_value = CalcSubAvg<byte>(pca_file);
+		else if (m_dst_type == GDT_UInt16)
+			return_value = CalcSubAvg<DT_16U>(pca_file);
+		else if (m_dst_type == GDT_Int16)
+			return_value = CalcSubAvg<DT_16S>(pca_file);
+		else if (m_dst_type == GDT_UInt32)
+			return_value = CalcSubAvg<DT_32U>(pca_file);
+		else if (m_dst_type == GDT_Int32)
+			return_value = CalcSubAvg<DT_32S>(pca_file);
+		else if (m_dst_type == GDT_Float32)
+			return_value = CalcSubAvg<DT_32F>(pca_file);
+		else if (m_dst_type == GDT_Float64)
+			return_value = CalcSubAvg<DT_64F>(pca_file);
+		
 		if (return_value != RE_SUCCESS)
 			return return_value;
 	}
@@ -60,10 +75,12 @@ int PCA::ExecutePCA(const char* pca_file, int pca_band_count /* = -1 */, bool is
 	return RE_SUCCESS;
 }
 
-int PCA::ExecutePCA(const char* pca_file, const char *statistics_file, int pca_band_count/* = -1*/, bool is_covariance/* = true*/, 
+int PCA::ExecutePCA(const char* pca_file, const char *statistics_file, int pca_band_count/* = -1*/, GDALDataType dst_type/* = 0*/, bool is_covariance/* = true*/, 
 			   bool is_like_envi/* = true*/, const char* format/* = "GTiff"*/)
 {
 	m_statistics_file = statistics_file;
+
+	m_dst_type = dst_type;
 	return ExecutePCA(pca_file, pca_band_count, is_covariance, is_like_envi, format);
 }
 
@@ -81,11 +98,105 @@ int PCA::PreProcessData()
 	m_band_stad = new double[m_band_count];
 
 	m_sta_io = new PCAStatisticsIO(m_statistics_file, m_band_count);
-	m_sta_io->WriteInit();
+	if (!m_sta_io->WriteInit())
+		return RE_FILENOTEXIST;
 
 	m_statistics = fopen(m_statistics_file, "w");
 	if (m_statistics == NULL)
 		return RE_FILENOTSUPPORT;
+
+	int w = m_src_dataset->GetRasterXSize();
+	int h = m_src_dataset->GetRasterYSize();
+	
+	int size = w*h;
+	double total = 0.0;
+	double stddev_ = 0.0; 
+	double mean_ = 0.0;
+
+	int block_heights = 16*1024*1024 / w;
+	int block_nums = h / block_heights;
+	int left_heights = h % block_heights;
+	int block_element = w*block_heights;
+
+	int read_heights = block_heights;
+
+	if (left_heights != 0)
+		block_nums += 1;
+
+	double *buf = new double[w*h*0.1*0.1];
+	m_src_dataset->GetRasterBand(1)->RasterIO(GF_Read, 0, 0, w, h, buf, w*0.1, h*0.1, GDT_Float64, 0, 0);
+
+	GDALRasterBand *band = m_src_dataset->GetRasterBand(1);
+	double *block_buf = new double[w*block_heights];
+	for (int i = 0; i < block_nums; i++)
+	{
+		if (i == block_nums - 1)
+		{
+			read_heights = h - (block_nums-1)*block_heights;
+			block_element = w*read_heights;
+			RELEASE(block_buf);
+			block_buf = new double[block_element];
+		}
+
+		band->RasterIO(GF_Read, 0, i*block_heights, w, read_heights, block_buf, w, read_heights, GDT_Float64, 0, 0);
+
+		for (int j = 0; j < block_element; j++)
+		{
+			total += block_buf[j];
+		}
+	}
+
+	RELEASE(block_buf);
+	mean_ = total / size;
+
+	total = 0.0;
+
+	//////////////////////////////////////////////////////////////////////////
+	double *bufline = new double[w];
+	
+	for (int i = 0; i < h; i++)
+	{
+		band->RasterIO(GF_Read, 0, i, w, 1, bufline, w, 1, GDT_Float64, 0, 0);
+		for (int j = 0; j < w; j++)
+		{
+			total += bufline[j];
+		}
+	}
+
+	mean_ = total / size;
+
+	total = 0.0;
+	for (int i = 0; i < h; i++)
+	{
+		band->RasterIO(GF_Read, 0, i, w, 1, bufline, w, 1, GDT_Float64, 0, 0);
+		for (int j = 0; j < w; j++)
+		{
+			total += (bufline[j] - mean_)*(bufline[j] - mean_);
+		}
+	}
+	stddev_ = sqrt(total/size);
+
+	
+	//////////////////////////////////////////////////////////////////////////
+	/*double *buf = new double[w*h];
+	m_src_dataset->GetRasterBand(1)->RasterIO(GF_Read, 0, 0, w, h, buf, w, h, GDT_Float64, 0, 0);*/
+
+	
+	for (int i = 0; i < size; i++)
+	{
+		total += buf[i];
+	}
+
+	mean_ = total / size;
+
+	total = 0.0;
+	for (int i = 0; i < size; i++)
+	{
+		total += (buf[i] - mean_)*(buf[i] - mean_);
+	}
+
+	stddev_ = sqrt(total/size);
+	//////////////////////////////////////////////////////////////////////////
 
 	double max_value, min_value;
 	//fprintf(m_statistics, "band			min			max			mean		stddev\n");
@@ -301,37 +412,55 @@ int PCA::CreatePCAFile(const char* pca_file, int pca_band_count, const char* for
 
 	m_select_eigenvectors = select_eigenvectors;
 
-	return LinearCombination(pca_file, m_select_eigenvectors, NULL, format);// Combination，组合
+	//return LinearCombination(pca_file, m_select_eigenvectors, NULL, format);// Combination，组合
+	//return LinearCombination<DT_32F>(pca_file, m_select_eigenvectors, NULL, format);// Combination，组合
+
+	//if (m_dst_type == GDT_Byte)
+	//	return LinearCombination<byte>(pca_file, m_select_eigenvectors, NULL, format);// Combination，组合
+	//else if (m_dst_type == GDT_UInt16)
+	//	return LinearCombination<DT_16U>(pca_file, m_select_eigenvectors, NULL, format);// Combination，组合
+	if (m_dst_type == GDT_Int16)
+		return LinearCombination<DT_16S>(pca_file, m_select_eigenvectors, NULL, format);// Combination，组合
+	//else if (m_dst_type == GDT_UInt32)
+	//	return LinearCombination<DT_32U>(pca_file, m_select_eigenvectors, NULL, format);// Combination，组合
+	else if (m_dst_type == GDT_Int32)
+		return LinearCombination<DT_32S>(pca_file, m_select_eigenvectors, NULL, format);// Combination，组合
+	else if (m_dst_type == GDT_Float32)
+		return LinearCombination<DT_32F>(pca_file, m_select_eigenvectors, NULL, format);// Combination，组合
+	else if (m_dst_type == GDT_Float64)
+		return LinearCombination<DT_64F>(pca_file, m_select_eigenvectors, NULL, format);// Combination，组合
+	else
+		return RE_FILETYPNOSUPPORT;
 }
 
-int PCA::LinearCombination(const char *pca_file, MyMatrix &select_eigenvectors,  double *mean, const char *format)
+int PCA::LinearCombination(const char *dst_file, MyMatrix &select_eigenvectors,  double *mean, const char *format)
 {
 	GDALAllRegister();
 	CPLSetConfigOption("GDAL_FILENAME_IS_UTF8","NO");
 
 	int width = m_src_dataset->GetRasterXSize();
 	int height = m_src_dataset->GetRasterYSize();
-	int band_count = select_eigenvectors.cols();
+	int dst_band_count = select_eigenvectors.cols();
 
-	GDALDriver *pca_driver = (GDALDriver *)GDALGetDriverByName(format);
-	GDALDataset *pca_dataset = pca_driver->Create(pca_file, width, height, band_count, GDT_Float32, NULL);
-	if ( pca_dataset == NULL )
+	GDALDriver *dst_diver = (GDALDriver *)GDALGetDriverByName(format);
+	GDALDataset *dst_dataset = dst_diver->Create(dst_file, width, height, dst_band_count, GDT_Float32, NULL);
+	if ( dst_dataset == NULL )
 		return RE_FILENOTSUPPORT;
 
 	double geo_transform[6] = { 0 };
 	m_src_dataset->GetGeoTransform(geo_transform);
-	pca_dataset->SetGeoTransform(geo_transform);
-	pca_dataset->SetProjection(m_src_dataset->GetProjectionRef());
+	dst_dataset->SetGeoTransform(geo_transform);
+	dst_dataset->SetProjection(m_src_dataset->GetProjectionRef());
 
 	DT_64F *src_buffer_data = new DT_64F[width*m_band_count];
-	DT_32F *pca_buffer_data = new DT_32F[width*band_count];
+	DT_32F *dst_buffer_data = new DT_32F[width*dst_band_count];
 	int *src_band_map = new int[m_band_count];
-	int *pca_band_map = new int[band_count];
+	int *dst_band_map = new int[dst_band_count];
 
 	for (int i = 1; i <= m_band_count; i++)
 		src_band_map[i - 1] = i;
-	for (int i = 1; i <= band_count; i++)
-		pca_band_map[i - 1] = i;
+	for (int i = 1; i <= dst_band_count; i++)
+		dst_band_map[i - 1] = i;
 
 	//////////////////////////////////////////////////////////////////////////
 	// 分块处理
@@ -341,7 +470,7 @@ int PCA::LinearCombination(const char *pca_file, MyMatrix &select_eigenvectors, 
 
 		for (int j = 0; j < width; j++)
 		{
-			for (int k1 = 0; k1 < band_count; k1++)
+			for (int k1 = 0; k1 < dst_band_count; k1++)
 			{
 				double temp = 0.0;
 				for (int k2 = 0; k2 < m_band_count; k2++)
@@ -350,22 +479,22 @@ int PCA::LinearCombination(const char *pca_file, MyMatrix &select_eigenvectors, 
 				}
 
 				if (mean == NULL)
-					pca_buffer_data[k1*width + j] = (float)temp;
+					dst_buffer_data[k1*width + j] = (float)temp;
 				else
-					pca_buffer_data[k1*width + j] = (float)temp + (float)mean[k1];
+					dst_buffer_data[k1*width + j] = (float)temp + (float)mean[k1];
 			}
 		}
 
-		pca_dataset->RasterIO(GF_Write, 0, h, width, 1, pca_buffer_data, width, 1, GDT_Float32, band_count, pca_band_map, 0, 0, 0);
+		dst_dataset->RasterIO(GF_Write, 0, h, width, 1, dst_buffer_data, width, 1, GDT_Float32, dst_band_count, dst_band_map, 0, 0, 0);
 	}
 
 	RELEASE(src_buffer_data);
-	RELEASE(pca_buffer_data);
+	RELEASE(dst_buffer_data);
 	RELEASE(src_band_map);
-	RELEASE(pca_band_map);
+	RELEASE(dst_band_map);
 	//////////////////////////////////////////////////////////////////////////
 
-	GDALClose((GDALDatasetH) pca_dataset);
+	GDALClose((GDALDatasetH) dst_dataset);
 
 	return RE_SUCCESS;
 }
@@ -413,11 +542,14 @@ int PCA::CalcSubAvg(const char* pca_file)
 	return RE_SUCCESS;
 }
 
-int PCA::ExecuteInversePCA(const char* inverse_pca_file, const char *statistics_file, const char* format /* = "GTiff" */)
+int PCA::ExecuteInversePCA(const char* inverse_pca_file, const char *statistics_file, GDALDataType dst_type/* = 0*/, const char* format /* = "GTiff" */)
 {
 	m_sta_io = new PCAStatisticsIO(statistics_file);
-	m_sta_io->ReadInit();
+	if (!m_sta_io->ReadInit())
+		return RE_FILENOTEXIST;
+
 	int band_count = m_sta_io->ReadBandCount();
+	m_dst_type = dst_type;
 
 	double *egeinvectors = new double[band_count*band_count];
 	m_band_mean = new double[band_count];
@@ -428,6 +560,7 @@ int PCA::ExecuteInversePCA(const char* inverse_pca_file, const char *statistics_
 	MyMatrix inverse_egeinvectors(band_count, band_count);
 
 	inverse_egeinvectors = egeinvectors_matrix.inverse();
+	m_select_eigenvectors = inverse_egeinvectors;
 	
 	GDALAllRegister();
 	CPLSetConfigOption("GDAL_FILENAME_IS_UTF8","NO");
@@ -436,8 +569,392 @@ int PCA::ExecuteInversePCA(const char* inverse_pca_file, const char *statistics_
 		return RE_FILENOTEXIST;
 
 	m_band_count = m_src_dataset->GetRasterCount();
-	return LinearCombination(inverse_pca_file, inverse_egeinvectors, m_band_mean, format);
+	//return LinearCombination(inverse_pca_file, inverse_egeinvectors, m_band_mean, format);
+	//return LinearCombination<DT_16S>(inverse_pca_file, inverse_egeinvectors, m_band_mean, format);
+	//if (m_dst_type == GDT_Byte)
+		//return LinearCombination<byte>(pca_file, m_select_eigenvectors, NULL, format);// Combination，组合
+	//else if (m_dst_type == GDT_UInt16)
+		//return LinearCombination<DT_16U>(pca_file, m_select_eigenvectors, NULL, format);// Combination，组合
+	if (m_dst_type == GDT_Int16)
+		return LinearCombination<DT_16S>(inverse_pca_file, inverse_egeinvectors, m_band_mean, format);// Combination，组合
+	//else if (m_dst_type == GDT_UInt32)
+	//	return LinearCombination<DT_32U>(pca_file, m_select_eigenvectors, NULL, format);// Combination，组合
+	else if (m_dst_type == GDT_Int32)
+		return LinearCombination<DT_32S>(inverse_pca_file, inverse_egeinvectors, m_band_mean, format);// Combination，组合
+	else if (m_dst_type == GDT_Float32)
+		return LinearCombination<DT_32F>(inverse_pca_file, inverse_egeinvectors, m_band_mean, format);// Combination，组合
+	else if (m_dst_type == GDT_Float64)
+		return LinearCombination<DT_64F>(inverse_pca_file, inverse_egeinvectors, m_band_mean, format);// Combination，组合
+	else
+		return RE_FILETYPNOSUPPORT;
 }
 
+template <typename T>
+int PCA::LinearCombination(const char *dst_file, MyMatrix &select_eigenvectors, double *mean, const char *format)
+{
+	GDALAllRegister();
+	CPLSetConfigOption("GDAL_FILENAME_IS_UTF8","NO");
+
+	int width = m_src_dataset->GetRasterXSize();
+	int height = m_src_dataset->GetRasterYSize();
+	int dst_band_count = select_eigenvectors.cols();	
+
+	GDALDriver *dst_diver = (GDALDriver *)GDALGetDriverByName(format);
+	GDALDataset *dst_dataset = dst_diver->Create(dst_file, width, height, dst_band_count, m_dst_type, NULL);
+	if ( dst_dataset == NULL )
+		return RE_FILENOTSUPPORT;
+
+	double geo_transform[6] = { 0 };
+	m_src_dataset->GetGeoTransform(geo_transform);
+	dst_dataset->SetGeoTransform(geo_transform);
+	dst_dataset->SetProjection(m_src_dataset->GetProjectionRef());
+
+	//////////////////////////////////////////////////////////////////////////
+	// 分块信息
+	int block_height = 4*1024*1024 / (width*m_band_count);
+	int block_nums = height / block_height;
+	int left_height = height % block_height;
+
+	int block_sample = width*block_height;
+
+	DT_64F *src_buffer_data = new DT_64F[width*block_height*m_band_count];
+	T *dst_buffer_data = new T[width*block_height*dst_band_count];
+	
+	int *src_band_map = new int[m_band_count];
+	int *dst_band_map = new int[dst_band_count];
+	for (int i = 1; i <= m_band_count; i++)
+		src_band_map[i - 1] = i;
+	for (int i = 1; i <= dst_band_count; i++)
+		dst_band_map[i - 1] = i;
+
+	if (mean == NULL)
+	{
+		for (int i = 0; i < block_nums; i++)
+		{
+			m_src_dataset->RasterIO(GF_Read, 0, i*block_height, width, block_height, src_buffer_data, 
+				width, block_height, GDT_Float64, m_band_count, src_band_map, 0, 0, 0);
+
+			if (m_dst_type == GDT_Int16 || m_dst_type == GDT_Int32)
+				CoreCalcInt16OrInt32<T>(src_buffer_data, dst_buffer_data, dst_band_count, block_sample);
+			else
+				CoreCalcFloat32OrFloat64<T>(src_buffer_data, dst_buffer_data, dst_band_count, block_sample);
+
+			//for (int k1 = 0; k1 < dst_band_count; k1++)
+			//{
+			//	for (int j = 0; j < block_sample; j++)
+			//	{
+			//		double temp = 0.0;
+
+			//		for (int k2 = 0; k2 < m_band_count; k2++)
+			//		{
+			//			temp += src_buffer_data[k2*block_sample + j] * select_eigenvectors(k2, k1);
+			//		}
+
+			//		// 有待做优化
+			//		if (m_dst_type == GDT_Int16 || m_dst_type == GDT_Int32)
+			//			dst_buffer_data[k1*block_sample + j] = (T)(temp + 0.5);
+			//		else
+			//			dst_buffer_data[k1*block_sample + j] = (T)temp;
+			//	}
+			//}
+
+			dst_dataset->RasterIO(GF_Write, 0, i*block_height, width, block_height, dst_buffer_data, 
+				width, block_height, m_dst_type, dst_band_count, dst_band_map, 0, 0, 0);
+
+		}
+		RELEASE(src_buffer_data);
+		RELEASE(dst_buffer_data);
+
+		if (left_height)
+		{
+			src_buffer_data = new DT_64F[width*left_height*m_band_count];
+			dst_buffer_data = new T[width*left_height*dst_band_count];
+			block_sample = width*left_height;
+			
+			m_src_dataset->RasterIO(GF_Read, 0,  block_nums*block_height, width, left_height, src_buffer_data, 
+				width, left_height, GDT_Float64, m_band_count, src_band_map, 0, 0, 0);
+
+			if (m_dst_type == GDT_Int16 || m_dst_type == GDT_Int32)
+				CoreCalcInt16OrInt32<T>(src_buffer_data, dst_buffer_data,dst_band_count, block_sample);
+			else
+				CoreCalcFloat32OrFloat64<T>(src_buffer_data, dst_buffer_data, dst_band_count, block_sample);
+			
+			//for (int k1 = 0; k1 < dst_band_count; k1++)
+			//{
+			//	for (int j = 0; j < block_sample; j++)
+			//	{
+			//		double temp = 0.0;
+
+			//		for (int k2 = 0; k2 < m_band_count; k2++)			
+			//			temp += src_buffer_data[k2*block_sample + j] * select_eigenvectors(k2, k1);
+			//			
+			//		// TODO：有待改进
+			//		if (m_dst_type == GDT_Int16 || m_dst_type == GDT_Int32)
+			//			dst_buffer_data[k1*block_sample + j] = (T)(temp + 0.5);
+			//		else
+			//			dst_buffer_data[k1*block_sample + j] = (T)temp;
+			//	}
+			//}	
+
+			dst_dataset->RasterIO(GF_Write, 0, block_nums*block_height, width, left_height, dst_buffer_data, 
+				width, left_height, m_dst_type, dst_band_count, dst_band_map, 0, 0, 0);
+		}
+
+	}
+	else
+	{
+		for (int i = 0; i < block_nums; i++)
+		{
+			m_src_dataset->RasterIO(GF_Read, 0, i*block_height, width, block_height, src_buffer_data, 
+				width, block_height, GDT_Float64, m_band_count, src_band_map, 0, 0, 0);
+
+			if (m_dst_type == GDT_Int16 || m_dst_type == GDT_Int32)
+				CoreCalcInt16OrInt32<T>(src_buffer_data, dst_buffer_data, mean, dst_band_count, block_sample);
+			else
+				CoreCalcFloat32OrFloat64<T>(src_buffer_data, dst_buffer_data, mean, dst_band_count, block_sample);
+
+			/*for (int k1 = 0; k1 < dst_band_count; k1++)
+			{
+				for (int j = 0; j < block_sample; j++)
+				{
+					double temp = 0.0;
+
+					for (int k2 = 0; k2 < m_band_count; k2++)
+					{
+						temp += src_buffer_data[k2*block_sample + j] * select_eigenvectors(k2, k1);
+					}
+
+					if (m_dst_type == GDT_Int16 || m_dst_type == GDT_Int32)
+						dst_buffer_data[k1*block_sample + j] = (T)(temp + mean[k1] + 0.5);
+					else
+						dst_buffer_data[k1*block_sample + j] = (T)(temp + mean[k1]);					
+				}
+			}*/
+
+			dst_dataset->RasterIO(GF_Write, 0, i*block_height, width, block_height, dst_buffer_data, 
+				width, block_height, m_dst_type, dst_band_count, dst_band_map, 0, 0, 0);
+		}
+		RELEASE(src_buffer_data);
+		RELEASE(dst_buffer_data);
+
+		if (left_height)
+		{
+			src_buffer_data = new DT_64F[width*left_height*m_band_count];
+			dst_buffer_data = new T[width*left_height*dst_band_count];
+			block_sample = width*left_height;
+
+			m_src_dataset->RasterIO(GF_Read, 0,  block_nums*block_height, width, left_height, src_buffer_data, 
+				width, left_height, GDT_Float64, m_band_count, src_band_map, 0, 0, 0);
+
+			if (m_dst_type == GDT_Int16 || m_dst_type == GDT_Int32)
+				CoreCalcInt16OrInt32<T>(src_buffer_data, dst_buffer_data, mean, dst_band_count, block_sample);
+			else
+				CoreCalcFloat32OrFloat64<T>(src_buffer_data, dst_buffer_data, mean, dst_band_count, block_sample);
+
+			//for (int k1 = 0; k1 < dst_band_count; k1++)
+			//{
+			//	for (int j = 0; j < block_sample; j++)
+			//	{
+			//		double temp = 0.0;
+
+			//		for (int k2 = 0; k2 < m_band_count; k2++)			
+			//			temp += src_buffer_data[k2*block_sample + j] * select_eigenvectors(k2, k1);
+
+			//		// TODO:有待改进
+			//		if (m_dst_type == GDT_Int16 || m_dst_type == GDT_Int32)
+			//			dst_buffer_data[k1*block_sample + j] = (T)(temp + mean[k1] + 0.5);
+			//		else
+			//			dst_buffer_data[k1*block_sample + j] = (T)(temp + mean[k1]);
+			//	}
+			//}	
+
+			dst_dataset->RasterIO(GF_Write, 0, block_nums*block_height, width, left_height, dst_buffer_data, 
+				width, left_height, m_dst_type, dst_band_count, dst_band_map, 0, 0, 0);
+		}
+
+	}
+
+	RELEASE(src_buffer_data);
+	RELEASE(dst_buffer_data);
+	RELEASE(src_band_map);
+	RELEASE(dst_band_map);
+
+	//////////////////////////////////////////////////////////////////////////
+
+	//////////////////////////////////////////////////////////////////////////
+	// 未分块处理
+	//DT_64F *src_buffer_data = new DT_64F[width*m_band_count];
+	//T *dst_buffer_data = new T[width*dst_band_count];
+	//int *src_band_map = new int[m_band_count];
+	//int *dst_band_map = new int[dst_band_count];
+
+	//for (int i = 1; i <= m_band_count; i++)
+	//	src_band_map[i - 1] = i;
+	//for (int i = 1; i <= dst_band_count; i++)
+	//	dst_band_map[i - 1] = i;
+
+	//for (int h = 0; h < height; h++)
+	//{
+	//	m_src_dataset->RasterIO(GF_Read, 0, h, width, 1, src_buffer_data, width, 1, GDT_Float64, m_band_count, src_band_map, 0, 0, 0);
+
+	//	for (int j = 0; j < width; j++)
+	//	{
+	//		for (int k1 = 0; k1 < dst_band_count; k1++)
+	//		{
+	//			double temp = 0.0;
+	//			for (int k2 = 0; k2 < m_band_count; k2++)
+	//			{			
+	//				temp += src_buffer_data[k2*width + j] * select_eigenvectors(k2, k1);			
+	//			}
+
+	//			if (mean == NULL)
+	//			{
+	//				if (m_dst_type == GDT_Int16 || m_dst_type == GDT_Int32)
+	//					dst_buffer_data[k1*width + j] = (T)(temp + 0.5);
+	//				else
+	//					dst_buffer_data[k1*width + j] = (T)temp;
+	//			}					
+	//			else
+	//			{
+	//				if (m_dst_type == GDT_Int16 || m_dst_type == GDT_Int32)
+	//					dst_buffer_data[k1*width + j] = (T)(temp + mean[k1] + 0.5);
+	//				else
+	//					dst_buffer_data[k1*width + j] = (T)(temp + mean[k1]);
+	//			}
+	//		}
+	//	}
+
+	//	dst_dataset->RasterIO(GF_Write, 0, h, width, 1, dst_buffer_data, width, 1, m_dst_type, dst_band_count, dst_band_map, 0, 0, 0);
+	//}
+
+	//RELEASE(src_buffer_data);
+	//RELEASE(dst_buffer_data);
+	//RELEASE(src_band_map);
+	//RELEASE(dst_band_map);
+	//////////////////////////////////////////////////////////////////////////
+
+	GDALClose((GDALDatasetH) dst_dataset);
+
+	return RE_SUCCESS;
+}
+
+template <typename T>
+int PCA::CalcSubAvg(const char* pca_file)
+{
+	GDALAllRegister();
+	CPLSetConfigOption("GDAL_FILENAME_IS_UTF8","NO");
+
+	GDALDataset *pca_dataset = (GDALDataset *) GDALOpen(pca_file, GA_Update);
+	if (pca_dataset == NULL)
+		return RE_FILENOTSUPPORT;
+
+	int width = pca_dataset->GetRasterXSize();
+	int height = pca_dataset->GetRasterYSize();
+	int band_count = pca_dataset->GetRasterCount();
+
+	DT_64F *buffer_data = new DT_64F[width];
+	T *dst_buffer_data = new T[width];
+
+	for (int b = 1; b <= band_count; b++)
+	{
+		double min_value = 0.0;
+		double max_value = 0.0;
+		double mean_value = 0.0;
+		double stddev_value = 0.0;
+
+		GDALRasterBand *band = pca_dataset->GetRasterBand(b);
+		band->ComputeStatistics(FALSE, &min_value, &max_value, &mean_value, &stddev_value, NULL, NULL);
+		for (int i = 0; i < height; i++)
+		{
+			band->RasterIO(GF_Read, 0, i, width, 1, buffer_data, width, 1, GDT_Float64, 0, 0);
+
+			double temp = 0.0;
+			for (int j = 0; j < width; j++)
+			{
+				if (m_dst_type == GDT_Int16 || m_dst_type == GDT_Int32)
+					dst_buffer_data[j] = (T)(buffer_data[j] - mean_value + 0.5);
+				else
+					dst_buffer_data[j] = (T)(buffer_data[j] - mean_value);
+			}				
+
+			band->RasterIO(GF_Write, 0, i, width, 1, dst_buffer_data, width, 1, m_dst_type, 0, 0);
+		}
+	}
+
+	GDALClose((GDALDatasetH) pca_dataset);
+	RELEASE(buffer_data);
+
+	string temp_file = string(pca_file) + ".aux.xml";
+	remove(temp_file.c_str());
+
+	return RE_SUCCESS;
+}
+
+template <typename T>
+void PCA::CoreCalcInt16OrInt32(double *src_buffer_data, T *dst_buffer_data, double *mean, int dst_band_count, int block_sample)
+{
+	
+	for (int k1 = 0; k1 < dst_band_count; k1++)
+	{
+		double temp = 0.0;
+		for (int j = 0; j < block_sample; j++)
+		{	
+			for (int k2 = 0; k2 < m_band_count; k2++)
+				temp += src_buffer_data[k2*block_sample + j] * m_select_eigenvectors(k2, k1);
+
+			dst_buffer_data[k1*block_sample + j] = (T)(temp + mean[k1] + 0.5);					
+		}
+	}
+}
+
+template <typename T>
+void PCA::CoreCalcFloat32OrFloat64(double *src_buffer_data, T *dst_buffer_data, double *mean, int dst_band_count, int block_sample)
+{
+	
+	for (int k1 = 0; k1 < dst_band_count; k1++)
+	{
+		double temp = 0.0;
+		for (int j = 0; j < block_sample; j++)
+		{
+			for (int k2 = 0; k2 < m_band_count; k2++)
+				temp += src_buffer_data[k2*block_sample + j] * m_select_eigenvectors(k2, k1);
+				
+			dst_buffer_data[k1*block_sample + j] = (T)(temp + mean[k1]);					
+		}
+	}
+}
+
+template <typename T>
+void PCA::CoreCalcInt16OrInt32(double *src_buffer_data, T *dst_buffer_data, int dst_band_count, int block_sample)
+{
+	
+	for (int k1 = 0; k1 < dst_band_count; k1++)
+	{
+		for (int j = 0; j < block_sample; j++)
+		{
+			double temp = 0.0;
+			for (int k2 = 0; k2 < m_band_count; k2++)
+				temp += src_buffer_data[k2*block_sample + j] * m_select_eigenvectors(k2, k1);
+
+			dst_buffer_data[k1*block_sample + j] = (T)(temp + 0.5);					
+		}
+	}
+}
+
+template <typename T>
+void PCA::CoreCalcFloat32OrFloat64(double *src_buffer_data, T *dst_buffer_data, int dst_band_count, int block_sample)
+{
+	for (int k1 = 0; k1 < dst_band_count; k1++)
+	{
+		for (int j = 0; j < block_sample; j++)
+		{
+			double temp = 0.0;
+			for (int k2 = 0; k2 < m_band_count; k2++)
+				temp += src_buffer_data[k2*block_sample + j] * m_select_eigenvectors(k2, k1);
+
+			dst_buffer_data[k1*block_sample + j] = (T)temp;					
+		}
+	}
+}
 
 
