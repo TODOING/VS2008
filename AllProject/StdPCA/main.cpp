@@ -1,10 +1,10 @@
-#include <stdlib.h>
+ï»¿#include <stdlib.h>
 #include "pca.h"
 
 int main()
 {
 	//const char *src_file = "D:\\Data\\PCA\\qb_boulder_msi.img";
-	//const char *pca_file = "D:\\Data\\PCA\\Temp\\qb_pca_my4_0_¾«È·Í³¼Æ.tif";
+	//const char *pca_file = "D:\\Data\\PCA\\Temp\\qb_pca_my4_0_ç²¾ç¡®ç»Ÿè®¡.tif";
 	
 	//const char *src_file = "D:\\Data\\PCA\\can_tmr.img";
 	//const char *pca_file = "D:\\Data\\PCA\\Temp\\my\\can_tmr_my6_0.tif";

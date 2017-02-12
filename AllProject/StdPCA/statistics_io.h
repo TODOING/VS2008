@@ -1,4 +1,4 @@
-#ifndef STATISTICS_IO_H
+﻿#ifndef STATISTICS_IO_H
 #define STATISTICS_IO_H
 #include <stdio.h>
 

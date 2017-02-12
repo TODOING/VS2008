@@ -1,4 +1,4 @@
-#ifndef PCA_H
+ï»¿#ifndef PCA_H
 #define PCA_H
 
 #include "matrix_eigenvalue.h"
@@ -12,13 +12,13 @@ public:
 	~PCA();
 
 	/**
-	* @brief PC±ä»»
-	* @param pszPCAFile			Êä³öÖ÷³É·Ö±ä»»ºóÎÄ¼şµÄÂ·¾¶
-	* @param iBandCount			Ö÷³É·Ö±ä»»ºóÎÄ¼şµÄµÄ²¨¶Î¸öÊı£¨Ä¬ÈÏÎªÈ«²¿-1£©
-	* @param bIsCovariance		²ÉÓÃÏà¹ØÏµÊı»¹ÊÇ·½²î-Ğ­·½²î¾ØÕóÀ´¼ÆËã£¬Ä¬ÈÏÎªĞ­·½²î¾ØÕó
-	* @param bIsLikeEnvi		¼ÆËã½á¹ûÊÇ·ñ°´ÕÕENVI·½Ê½Êä³ö£¬¼´½«ËùÓĞµÄÊı¾İ¼õÈ¥¾ùÖµ£¬Ê¹µÃÃ¿¸ö²¨¶ÎµÄ¾ùÖµÎª0
-	* @param pszFormat			Êä³öÎÄ¼ş¸ñÊ½£¬Ä¬ÈÏÎªGeoTiff¸ñÊ½
-	* @return ·µ»Ø´úÂë
+	* @brief PCå˜æ¢
+	* @param pszPCAFile			è¾“å‡ºä¸»æˆåˆ†å˜æ¢åæ–‡ä»¶çš„è·¯å¾„
+	* @param iBandCount			ä¸»æˆåˆ†å˜æ¢åæ–‡ä»¶çš„çš„æ³¢æ®µä¸ªæ•°ï¼ˆé»˜è®¤ä¸ºå…¨éƒ¨-1ï¼‰
+	* @param bIsCovariance		é‡‡ç”¨ç›¸å…³ç³»æ•°è¿˜æ˜¯æ–¹å·®-åæ–¹å·®çŸ©é˜µæ¥è®¡ç®—ï¼Œé»˜è®¤ä¸ºåæ–¹å·®çŸ©é˜µ
+	* @param bIsLikeEnvi		è®¡ç®—ç»“æœæ˜¯å¦æŒ‰ç…§ENVIæ–¹å¼è¾“å‡ºï¼Œå³å°†æ‰€æœ‰çš„æ•°æ®å‡å»å‡å€¼ï¼Œä½¿å¾—æ¯ä¸ªæ³¢æ®µçš„å‡å€¼ä¸º0
+	* @param pszFormat			è¾“å‡ºæ–‡ä»¶æ ¼å¼ï¼Œé»˜è®¤ä¸ºGeoTiffæ ¼å¼
+	* @return è¿”å›ä»£ç 
 	*/
 	int ExecutePCA(const char* pca_file, int pca_band_count = -1, bool is_covariance = true, 
 		bool is_like_envi = true, const char* format = "GTiff");
@@ -27,68 +27,68 @@ public:
 		bool is_like_envi = true, const char* format = "GTiff");
 
 	/**
-	* @brief PCÄæ±ä»»
-	* @param pszPCAFile			Êä³öÖ÷³É·Ö±ä»»ºóÎÄ¼şµÄÂ·¾¶
-	* @param pmMatrix			Ö÷³É·Ö±ä»»µÄÌØÕ÷ÏòÁ¿¾ØÕó
-	* @param pvMeanVector		Ô­Ê¼Í¼ÏñµÄ¾ùÖµÏòÁ¿£¬¿ÉÒÔÎªNULL
-	* @param pszFormat			Êä³öÎÄ¼ş¸ñÊ½£¬Ä¬ÈÏÎªGeoTiff¸ñÊ½
-	* @return ·µ»Ø´úÂë
+	* @brief PCé€†å˜æ¢
+	* @param pszPCAFile			è¾“å‡ºä¸»æˆåˆ†å˜æ¢åæ–‡ä»¶çš„è·¯å¾„
+	* @param pmMatrix			ä¸»æˆåˆ†å˜æ¢çš„ç‰¹å¾å‘é‡çŸ©é˜µ
+	* @param pvMeanVector		åŸå§‹å›¾åƒçš„å‡å€¼å‘é‡ï¼Œå¯ä»¥ä¸ºNULL
+	* @param pszFormat			è¾“å‡ºæ–‡ä»¶æ ¼å¼ï¼Œé»˜è®¤ä¸ºGeoTiffæ ¼å¼
+	* @return è¿”å›ä»£ç 
 	*/
 	int ExecuteInversePCA(const char* inverse_pca_file, const char *statistics_file,  const char* format = "GTiff");
 
 private:
 	/**
-	* @brief Êı¾İÔ¤´¦Àí£¬½øĞĞÍ¼ÏñĞÅÏ¢µÄÍ³¼ÆµÈ
-	* @return ·µ»Ø´úÂë
+	* @brief æ•°æ®é¢„å¤„ç†ï¼Œè¿›è¡Œå›¾åƒä¿¡æ¯çš„ç»Ÿè®¡ç­‰
+	* @return è¿”å›ä»£ç 
 	*/
 	int PreProcessData();
 
 	/**
-	* @brief ¼ÆËãĞ­·½²î¾ØÕóºÍÏà¹ØÏµÊı¾ØÕóR£¬µÚ¶ş²½
-	* @return ·µ»Ø´úÂë
+	* @brief è®¡ç®—åæ–¹å·®çŸ©é˜µå’Œç›¸å…³ç³»æ•°çŸ©é˜µRï¼Œç¬¬äºŒæ­¥
+	* @return è¿”å›ä»£ç 
 	*/
 	int CalcCovarianceMartix();
 
 	/**
-	* @brief ¼ÆËãÌØÕ÷ÖµºÍÌØÕ÷ÏòÁ¿£¬µÚÈı²½ºÍ¼ÆËã¹±Ï×ÂÊÒÔ¼°ÀÛ»ı¹±Ï×ÂÊ£¬µÚËÄ²½
+	* @brief è®¡ç®—ç‰¹å¾å€¼å’Œç‰¹å¾å‘é‡ï¼Œç¬¬ä¸‰æ­¥å’Œè®¡ç®—è´¡çŒ®ç‡ä»¥åŠç´¯ç§¯è´¡çŒ®ç‡ï¼Œç¬¬å››æ­¥
 	*/
 	void CalcEigenvaluesAndEigenvectors();
 
 	/**
-	* @brief ¼ÆËãÖ÷³É·ÖµÃ·Ö£¬²¢Ğ´Èëµ½ÎÄ¼şÖĞ£¬µÚÎåºÍµÚÁù²½
-	* @param pszPCAFile		Êä³öÖ÷³É·Ö±ä»»ºóÎÄ¼şµÄÂ·¾¶
-	* @param iBandCount		Ö÷³É·Ö±ä»»ºóÎÄ¼şµÄµÄ²¨¶Î¸öÊı£¨Ä¬ÈÏÎªÈ«²¿-1£©
-	* @param pszFormat		Êä³öÎÄ¼ş¸ñÊ½
-	* @return ·µ»Ø´úÂë
+	* @brief è®¡ç®—ä¸»æˆåˆ†å¾—åˆ†ï¼Œå¹¶å†™å…¥åˆ°æ–‡ä»¶ä¸­ï¼Œç¬¬äº”å’Œç¬¬å…­æ­¥
+	* @param pszPCAFile		è¾“å‡ºä¸»æˆåˆ†å˜æ¢åæ–‡ä»¶çš„è·¯å¾„
+	* @param iBandCount		ä¸»æˆåˆ†å˜æ¢åæ–‡ä»¶çš„çš„æ³¢æ®µä¸ªæ•°ï¼ˆé»˜è®¤ä¸ºå…¨éƒ¨-1ï¼‰
+	* @param pszFormat		è¾“å‡ºæ–‡ä»¶æ ¼å¼
+	* @return è¿”å›ä»£ç 
 	*/
 	int CreatePCAFile(const char* pca_file, int pca_band_count, const char* format);
 
 	/**
-	* @brief ¼ÆËãÖ÷³É·ÖµÃ·Ö£¬²¢Ğ´Èëµ½ÎÄ¼şÖĞ£¬µÚÎåºÍµÚÁù²½
-	* @param pszPCAFile Êä³öÖ÷³É·Ö±ä»»ºóÎÄ¼şµÄÂ·¾¶
-	* @return ·µ»Ø´úÂë
+	* @brief è®¡ç®—ä¸»æˆåˆ†å¾—åˆ†ï¼Œå¹¶å†™å…¥åˆ°æ–‡ä»¶ä¸­ï¼Œç¬¬äº”å’Œç¬¬å…­æ­¥
+	* @param pszPCAFile è¾“å‡ºä¸»æˆåˆ†å˜æ¢åæ–‡ä»¶çš„è·¯å¾„
+	* @return è¿”å›ä»£ç 
 	*/
 	int CalcSubAvg(const char* pca_file);
 
 	int LinearCombination(const char *pca_file, MyMatrix &select_eigenvectors, double *mean, const char *format);
 
 private:	
-	const char *m_src_file;		/*<! Òª±ä»»µÄÎÄ¼şÂ·¾¶ */
-	const char *m_statistics_file; // Í³¼ÆÎÄ¼ş
+	const char *m_src_file;		/*<! è¦å˜æ¢çš„æ–‡ä»¶è·¯å¾„ */
+	const char *m_statistics_file; // ç»Ÿè®¡æ–‡ä»¶
 	FILE *m_statistics;
-	bool m_is_covariance;		/*<! PCA±ä»»·½Ê½£¬trueÎªĞ­·½²î£¬falseÎªÏà¹ØÏµÊı */
+	bool m_is_covariance;		/*<! PCAå˜æ¢æ–¹å¼ï¼Œtrueä¸ºåæ–¹å·®ï¼Œfalseä¸ºç›¸å…³ç³»æ•° */
 
-	GDALDataset *m_src_dataset;	/*<! Òª±ä»»µÄÎÄ¼şÖ¸Õë */
+	GDALDataset *m_src_dataset;	/*<! è¦å˜æ¢çš„æ–‡ä»¶æŒ‡é’ˆ */
 
-	int m_band_count;			/*<! ²¨¶Î¸öÊı */	
-	double *m_band_mean;			/*<! ²¨¶Î¾ùÖµ */	
-	double *m_band_stad;			/*<! ²¨¶Î±ê×¼²î */
+	int m_band_count;			/*<! æ³¢æ®µä¸ªæ•° */	
+	double *m_band_mean;			/*<! æ³¢æ®µå‡å€¼ */	
+	double *m_band_stad;			/*<! æ³¢æ®µæ ‡å‡†å·® */
 
-	double *m_relativity;			/*<! Ïà¹ØÏµÊı¾ØÕó(Ğ­·½²î¾ØÕó)ÖĞµÄÔªËØ */
-	MyMatrix m_relate_matrix;		/*<! Ïà¹ØÏµÊı¾ØÕó(Ğ­·½²î¾ØÕó) */
-	MyVector m_eigenvalues;			/*<! Ïà¹ØÏµÊı¾ØÕó(Ğ­·½²î¾ØÕó)µÄÌØÕ÷Öµ */
-	MyMatrix m_eigenvectors;		/*<! Ïà¹ØÏµÊı¾ØÕó(Ğ­·½²î¾ØÕó)µÄÌØÕ÷ÏòÁ¿ */
-	MyMatrix m_select_eigenvectors; /*<! ¹¹½¨Ñ¡ÔñºóµÄÌØÕ÷ÏòÁ¿¾ØÕó */
+	double *m_relativity;			/*<! ç›¸å…³ç³»æ•°çŸ©é˜µ(åæ–¹å·®çŸ©é˜µ)ä¸­çš„å…ƒç´  */
+	MyMatrix m_relate_matrix;		/*<! ç›¸å…³ç³»æ•°çŸ©é˜µ(åæ–¹å·®çŸ©é˜µ) */
+	MyVector m_eigenvalues;			/*<! ç›¸å…³ç³»æ•°çŸ©é˜µ(åæ–¹å·®çŸ©é˜µ)çš„ç‰¹å¾å€¼ */
+	MyMatrix m_eigenvectors;		/*<! ç›¸å…³ç³»æ•°çŸ©é˜µ(åæ–¹å·®çŸ©é˜µ)çš„ç‰¹å¾å‘é‡ */
+	MyMatrix m_select_eigenvectors; /*<! æ„å»ºé€‰æ‹©åçš„ç‰¹å¾å‘é‡çŸ©é˜µ */
 	PCAStatisticsIO *m_sta_io;
 };
 

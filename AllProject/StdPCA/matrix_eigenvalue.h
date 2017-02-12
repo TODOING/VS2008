@@ -1,41 +1,41 @@
-#ifndef MATRIX_EIGENVALUE_H
+ï»¿#ifndef MATRIX_EIGENVALUE_H
 #define MATRIX_EIGENVALUE_H
 
 #include "Eigen/Dense"
 using namespace Eigen;
 
-// ±ê×¼¾ØÕó£¬ÊıÖµ´æÔÚ¾ØÕóÖĞ
+// æ ‡å‡†çŸ©é˜µï¼Œæ•°å€¼å­˜åœ¨çŸ©é˜µä¸­
 typedef Eigen::Matrix< double, Dynamic, Dynamic, RowMajor> MyMatrix;
 
-// ±ê×¼ÁĞÏòÁ¿£¬ÊıÖµ´æÔÚ¾ØÕóÖĞ
+// æ ‡å‡†åˆ—å‘é‡ï¼Œæ•°å€¼å­˜åœ¨çŸ©é˜µä¸­
 typedef Eigen::Matrix< double, Dynamic, 1> MyVector;
 
 class MatrixEigenvalue
 {
 public:
 	/**
-	* @brief ÇóÊµ¶Ô³Æ¾ØÕóµÄÌØÕ÷Öµ¼°ÌØÕ÷ÏòÁ¿
-	* @param src_matrix							ËùÇóµÄ¾ØÕó
-	* @param eigenvalues						¾ØÕóµÄÌØÕ÷Öµ
-	* @param eigenvectors						¾ØÕóµÄÌØÕ÷ÏòÁ¿£¨°´ÕÕÁĞÀ´´æ£©£¬Èç¹ûÌØÕ÷ÖµµÄĞòºÅÎª1£¬ÄÇÃ´¶ÔÓ¦µÄÌØÕ÷ÏòÁ¿ÎªµÚ1ÁĞ
-	* @param eigenvalues_percent				¾ØÕóµÄÌØÕ÷Öµ°Ù·Ö±È
-	* @param eigenvalues_accumulate_percent	    ¾ØÕóµÄÌØÕ÷ÖµÀÛ»ı°Ù·Ö±È
-	* @param deps								ÀÛ¼ÆÎó²î
-	* @return ·µ»ØÖµĞ¡ÓÚ0±íÊ¾³¬¹ıµü´újt´ÎÈÔÎ´´ïµ½¾«¶ÈÒªÇó£¬·µ»ØÖµ´óÓÚ0±íÊ¾Õı³£·µ»Ø 
+	* @brief æ±‚å®å¯¹ç§°çŸ©é˜µçš„ç‰¹å¾å€¼åŠç‰¹å¾å‘é‡
+	* @param src_matrix							æ‰€æ±‚çš„çŸ©é˜µ
+	* @param eigenvalues						çŸ©é˜µçš„ç‰¹å¾å€¼
+	* @param eigenvectors						çŸ©é˜µçš„ç‰¹å¾å‘é‡ï¼ˆæŒ‰ç…§åˆ—æ¥å­˜ï¼‰ï¼Œå¦‚æœç‰¹å¾å€¼çš„åºå·ä¸º1ï¼Œé‚£ä¹ˆå¯¹åº”çš„ç‰¹å¾å‘é‡ä¸ºç¬¬1åˆ—
+	* @param eigenvalues_percent				çŸ©é˜µçš„ç‰¹å¾å€¼ç™¾åˆ†æ¯”
+	* @param eigenvalues_accumulate_percent	    çŸ©é˜µçš„ç‰¹å¾å€¼ç´¯ç§¯ç™¾åˆ†æ¯”
+	* @param deps								ç´¯è®¡è¯¯å·®
+	* @return è¿”å›å€¼å°äº0è¡¨ç¤ºè¶…è¿‡è¿­ä»£jtæ¬¡ä»æœªè¾¾åˆ°ç²¾åº¦è¦æ±‚ï¼Œè¿”å›å€¼å¤§äº0è¡¨ç¤ºæ­£å¸¸è¿”å› 
 	*/ 
 	static bool GetMatrixEigen(MyMatrix src_matrix, MyVector &eigenvalues, MyMatrix &eigenvectors, MyVector *eigenvalues_percent = NULL, 
 		MyVector *eigenvalues_accumulate_percent = NULL, double deps = 0.00000001);
 
 private:
 	/** 
-	* @brief ÇóÊµ¶Ô³Æ¾ØÕóµÄÌØÕ÷Öµ¼°ÌØÕ÷ÏòÁ¿µÄÑÅ¸ñ±È·¨  
-	* ÀûÓÃÑÅ¸ñ±È(Jacobi)·½·¨ÇóÊµ¶Ô³Æ¾ØÕóµÄÈ«²¿ÌØÕ÷Öµ¼°ÌØÕ÷ÏòÁ¿  
-	* @param symmetry_matrix      ³¤¶ÈÎªn*nµÄÊı×é£¬´æ·ÅÊµ¶Ô³Æ¾ØÕó£¬·µ»ØÊ±¶Ô½ÇÏß´æ·Ån¸öÌØÕ÷Öµ  
-	* @param dims				  ¾ØÕóµÄ½×Êı  
-	* @param eigenvectors		  ³¤¶ÈÎªn*nµÄÊı×é£¬·µ»ØÌØÕ÷ÏòÁ¿(°´ÁĞ´æ´¢)  
-	* @param eps				  ¿ØÖÆ¾«¶ÈÒªÇó  
-	* @param jt					  ÕûĞÍ±äÁ¿£¬¿ØÖÆ×î´óµü´ú´ÎÊı  
-	* @return ·µ»Øfalse±íÊ¾³¬¹ıµü´újt´ÎÈÔÎ´´ïµ½¾«¶ÈÒªÇó£¬·µ»Øtrue±íÊ¾Õı³£·µ»Ø
+	* @brief æ±‚å®å¯¹ç§°çŸ©é˜µçš„ç‰¹å¾å€¼åŠç‰¹å¾å‘é‡çš„é›…æ ¼æ¯”æ³•  
+	* åˆ©ç”¨é›…æ ¼æ¯”(Jacobi)æ–¹æ³•æ±‚å®å¯¹ç§°çŸ©é˜µçš„å…¨éƒ¨ç‰¹å¾å€¼åŠç‰¹å¾å‘é‡  
+	* @param symmetry_matrix      é•¿åº¦ä¸ºn*nçš„æ•°ç»„ï¼Œå­˜æ”¾å®å¯¹ç§°çŸ©é˜µï¼Œè¿”å›æ—¶å¯¹è§’çº¿å­˜æ”¾nä¸ªç‰¹å¾å€¼  
+	* @param dims				  çŸ©é˜µçš„é˜¶æ•°  
+	* @param eigenvectors		  é•¿åº¦ä¸ºn*nçš„æ•°ç»„ï¼Œè¿”å›ç‰¹å¾å‘é‡(æŒ‰åˆ—å­˜å‚¨)  
+	* @param eps				  æ§åˆ¶ç²¾åº¦è¦æ±‚  
+	* @param jt					  æ•´å‹å˜é‡ï¼Œæ§åˆ¶æœ€å¤§è¿­ä»£æ¬¡æ•°  
+	* @return è¿”å›falseè¡¨ç¤ºè¶…è¿‡è¿­ä»£jtæ¬¡ä»æœªè¾¾åˆ°ç²¾åº¦è¦æ±‚ï¼Œè¿”å›trueè¡¨ç¤ºæ­£å¸¸è¿”å›
 	*/   
 	static bool Jacobi(double symmetry_matrix[], int dim, double eigenvectors[], double eps, int jt);
 

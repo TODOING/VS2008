@@ -1,4 +1,4 @@
-#include "pca.h"
+ï»¿#include "pca.h"
 #include "gdal_priv.h"
 #include "imgalg_define.h"
 #include <stdio.h>
@@ -35,17 +35,17 @@ int PCA::ExecutePCA(const char* pca_file, int pca_band_count /* = -1 */, bool is
 {
 	m_is_covariance = is_covariance;
 
-	// µÚÒ»²½£¬Êı¾İÔ¤´¦Àí£¬Í³¼ÆÃ¿Ò»²¨¶ÎµÄ¾ùÖµºÍ±ê×¼²î
+	// ç¬¬ä¸€æ­¥ï¼Œæ•°æ®é¢„å¤„ç†ï¼Œç»Ÿè®¡æ¯ä¸€æ³¢æ®µçš„å‡å€¼å’Œæ ‡å‡†å·®
 	int return_value = PreProcessData();
 	if (return_value != RE_SUCCESS)
 		return return_value;
 
-	// µÚ¶ş²½£¬¼ÆËãĞ­·½²î¾ØÕóºÍÏà¹ØÏµÊı¾ØÕóR£¬ÒÔ¼°ÄÚ²¿ÇóÌØÕ÷ÖµºÍÌØÕ÷ÏòÁ¿
+	// ç¬¬äºŒæ­¥ï¼Œè®¡ç®—åæ–¹å·®çŸ©é˜µå’Œç›¸å…³ç³»æ•°çŸ©é˜µRï¼Œä»¥åŠå†…éƒ¨æ±‚ç‰¹å¾å€¼å’Œç‰¹å¾å‘é‡
 	return_value = CalcCovarianceMartix();
 	if (return_value != RE_SUCCESS)
 		return return_value;
 
-	// ¼ÆËãÖ÷³É·ÖµÃ·Ö£¬²¢Ğ´Èëµ½ÎÄ¼şÖĞ
+	// è®¡ç®—ä¸»æˆåˆ†å¾—åˆ†ï¼Œå¹¶å†™å…¥åˆ°æ–‡ä»¶ä¸­
 	return_value = CreatePCAFile(pca_file, pca_band_count, format);
 	if (return_value != RE_SUCCESS)
 		return return_value;
@@ -117,14 +117,14 @@ int PCA::CalcCovarianceMartix()
 	m_relativity = new double[element_num];
 	Map<MyMatrix> covariance_matrix(m_relativity, m_band_count, m_band_count);
 	
-	// ÇóĞ­·½²î»òÏà¹ØÏµÊı¾ØÕó
+	// æ±‚åæ–¹å·®æˆ–ç›¸å…³ç³»æ•°çŸ©é˜µ
 	for (int i1 = 1; i1 <= m_band_count; i1++)
 	{
 		for (int i2 = 1; i2 <= m_band_count; i2++)
 		{
 			if (i2 < i1)
 			{
-				// TODO£ºÓĞ´ıÑéÖ¤
+				// TODOï¼šæœ‰å¾…éªŒè¯
 				m_relativity[element_index] = m_relativity[(i2 - 1)*m_band_count + (i1 - 1)];
 				
 				element_index++;
@@ -143,7 +143,7 @@ int PCA::CalcCovarianceMartix()
 			}
 
 			//////////////////////////////////////////////////////////////////////////
-			// ·Ö¿é´¦Àí
+			// åˆ†å—å¤„ç†
 			GDALRasterBand *band1 = m_src_dataset->GetRasterBand(i1);
 			GDALRasterBand *band2 = m_src_dataset->GetRasterBand(i2);
 
@@ -199,11 +199,11 @@ void PCA::CalcEigenvaluesAndEigenvectors()
 
 	MyVector eigenvalues(m_band_count);
 	MyMatrix eigenvectors(m_band_count, m_band_count);
-	MyVector contribute(m_band_count);// ¿ÉÊä³öÈÃÓÃ»§Ñ¡Ôñ
-	MyVector accumulate_contribute(m_band_count);// ¿ÉÊä³öÈÃÓÃ»§Ñ¡Ôñ
+	MyVector contribute(m_band_count);// å¯è¾“å‡ºè®©ç”¨æˆ·é€‰æ‹©
+	MyVector accumulate_contribute(m_band_count);// å¯è¾“å‡ºè®©ç”¨æˆ·é€‰æ‹©
 
 	//////////////////////////////////////////////////////////////////////////
-	// ÀûÓÃEigen3¼ÆËãÌØÕ÷ÖµºÍÌØÕ÷ÏòÁ¿
+	// åˆ©ç”¨Eigen3è®¡ç®—ç‰¹å¾å€¼å’Œç‰¹å¾å‘é‡
 	//EigenSolver<MyMatrix> es(matrix);
 	//MyMatrix D = es.pseudoEigenvalueMatrix();
 	//MyMatrix V = es.pseudoEigenvectors();
@@ -301,7 +301,7 @@ int PCA::CreatePCAFile(const char* pca_file, int pca_band_count, const char* for
 
 	m_select_eigenvectors = select_eigenvectors;
 
-	return LinearCombination(pca_file, m_select_eigenvectors, NULL, format);// Combination£¬×éºÏ
+	return LinearCombination(pca_file, m_select_eigenvectors, NULL, format);// Combinationï¼Œç»„åˆ
 }
 
 int PCA::LinearCombination(const char *pca_file, MyMatrix &select_eigenvectors,  double *mean, const char *format)
@@ -334,7 +334,7 @@ int PCA::LinearCombination(const char *pca_file, MyMatrix &select_eigenvectors, 
 		pca_band_map[i - 1] = i;
 
 	//////////////////////////////////////////////////////////////////////////
-	// ·Ö¿é´¦Àí
+	// åˆ†å—å¤„ç†
 	for (int h = 0; h < height; h++)
 	{
 		m_src_dataset->RasterIO(GF_Read, 0, h, width, 1, src_buffer_data, width, 1, GDT_Float64, m_band_count, src_band_map, 0, 0, 0);

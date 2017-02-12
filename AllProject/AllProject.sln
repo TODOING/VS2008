@@ -1,8 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 10.00
 # Visual Studio 2008
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PCA", "PCA\PCA.vcproj", "{46C7C118-D1B0-48DD-975D-A7FBBEF1B2BF}"
-EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Filter", "Filter\Filter\Filter.vcproj", "{6B36EF2E-4915-42CF-9649-0FEA9C178088}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "HighSpecRXD", "HighSpecRXD\HighSpecRXD.vcproj", "{60F2C5F0-5CD8-43CC-83C6-74F7E6EDCEEE}"
@@ -15,10 +13,6 @@ Global
 		Release|Win32 = Release|Win32
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{46C7C118-D1B0-48DD-975D-A7FBBEF1B2BF}.Debug|Win32.ActiveCfg = Debug|Win32
-		{46C7C118-D1B0-48DD-975D-A7FBBEF1B2BF}.Debug|Win32.Build.0 = Debug|Win32
-		{46C7C118-D1B0-48DD-975D-A7FBBEF1B2BF}.Release|Win32.ActiveCfg = Release|Win32
-		{46C7C118-D1B0-48DD-975D-A7FBBEF1B2BF}.Release|Win32.Build.0 = Release|Win32
 		{6B36EF2E-4915-42CF-9649-0FEA9C178088}.Debug|Win32.ActiveCfg = Debug|Win32
 		{6B36EF2E-4915-42CF-9649-0FEA9C178088}.Debug|Win32.Build.0 = Debug|Win32
 		{6B36EF2E-4915-42CF-9649-0FEA9C178088}.Release|Win32.ActiveCfg = Release|Win32

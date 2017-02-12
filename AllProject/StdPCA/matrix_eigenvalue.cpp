@@ -1,4 +1,4 @@
-#include "matrix_eigenvalue.h"
+ï»¿#include "matrix_eigenvalue.h"
 
 #include <math.h>
 #include <map>
@@ -55,15 +55,15 @@ bool MatrixEigenvalue::GetMatrixEigen(MyMatrix src_matrix, MyVector &eigenvalues
 		matrix_eigenvectors = NULL;
 	}
 
-	double sum_eigenvalue = 0.0;// ÌØÕ÷Öµ×ÜºÍ
-	map<double, int> map_eigenvalue;// ¼ÇÂ¼Ã¿¸öÌØÕ÷ÖµËùÔÚµÄÎ»ÖÃ£¬¼´ËùÔÚ²¨¶ÎÎ»ÖÃ
+	double sum_eigenvalue = 0.0;// ç‰¹å¾å€¼æ€»å’Œ
+	map<double, int> map_eigenvalue;// è®°å½•æ¯ä¸ªç‰¹å¾å€¼æ‰€åœ¨çš„ä½ç½®ï¼Œå³æ‰€åœ¨æ³¢æ®µä½ç½®
 	for (size_t index = 0; index < temp_eigenvalues.size(); index++)
 	{
 		map_eigenvalue[temp_eigenvalues[index]] = index;
 		sum_eigenvalue += temp_eigenvalues[index];
 	}
 
-	// ¶ÔĞ­·½²î¾ØÕóµÄÌØÕ÷ÖµºÍÌØÕ÷ÏòÁ¿ÅÅĞò²¢¼ÆËãÀÛ¼Æ°Ù·Ö±ÈºÍ°Ù·Ö±È
+	// å¯¹åæ–¹å·®çŸ©é˜µçš„ç‰¹å¾å€¼å’Œç‰¹å¾å‘é‡æ’åºå¹¶è®¡ç®—ç´¯è®¡ç™¾åˆ†æ¯”å’Œç™¾åˆ†æ¯”
 	map<double, int>::reverse_iterator iter = map_eigenvalue.rbegin();
 	for (size_t ii = 0; ii < temp_eigenvalues.size(); ii++)
 	{
@@ -71,9 +71,9 @@ bool MatrixEigenvalue::GetMatrixEigen(MyMatrix src_matrix, MyVector &eigenvalues
 			break;
 
 		eigenvalues[ii] = iter->first;
-		int index = iter->second;// »ñÈ¡¸ÃÌØÕ÷Öµ¶ÔÓ¦µÄÌØÕ÷ÏòÁ¿¶ÔÓ¦µÄÁĞºÅ
+		int index = iter->second;// è·å–è¯¥ç‰¹å¾å€¼å¯¹åº”çš„ç‰¹å¾å‘é‡å¯¹åº”çš„åˆ—å·
 
-		if (eigenvalues_percent != NULL)// ¼ÆËã°Ù·Ö±ÈÒÔ¼°ÀÛ»ı°Ù·Ö±È
+		if (eigenvalues_percent != NULL)// è®¡ç®—ç™¾åˆ†æ¯”ä»¥åŠç´¯ç§¯ç™¾åˆ†æ¯”
 		{
 			double temp = iter->first / sum_eigenvalue;
 			(*eigenvalues_percent)[ii] = temp;
@@ -89,7 +89,7 @@ bool MatrixEigenvalue::GetMatrixEigen(MyMatrix src_matrix, MyVector &eigenvalues
 
 		double max_value = ABS(temp_eigenvectors(0, index));
 		int num = 0;
-		for (int row = 0; row < dim; row++)// »ñÈ¡ÌØÕ÷ÏòÁ¿ÖĞ¾ø¶ÔÖµ×î´óµÄÎ»ÖÃ
+		for (int row = 0; row < dim; row++)// è·å–ç‰¹å¾å‘é‡ä¸­ç»å¯¹å€¼æœ€å¤§çš„ä½ç½®
 		{
 			double temp = ABS(temp_eigenvectors(row, index));
 
@@ -100,11 +100,11 @@ bool MatrixEigenvalue::GetMatrixEigen(MyMatrix src_matrix, MyVector &eigenvalues
 			}
 		}
 
-		bool is_positive = false;// ÅĞ¶Ï×î´óµÄÌØÕ÷ÏòÁ¿ÖĞµÄÖµÊÇ·ñÎªÕı
+		bool is_positive = false;// åˆ¤æ–­æœ€å¤§çš„ç‰¹å¾å‘é‡ä¸­çš„å€¼æ˜¯å¦ä¸ºæ­£
 		if (max_value - temp_eigenvectors(num, index) < 0.000000001)
 			is_positive = true;
 
-		for (int row = 0; row < dim; row++)// È·±£Ã¿Ò»¸öÌØÕ÷ÏòÁ¿µÄ¾ø¶ÔÖµ×î´óµÄ¶¼ÎªÕı
+		for (int row = 0; row < dim; row++)// ç¡®ä¿æ¯ä¸€ä¸ªç‰¹å¾å‘é‡çš„ç»å¯¹å€¼æœ€å¤§çš„éƒ½ä¸ºæ­£
 		{
 			if (!is_positive)
 				eigenvectors(row, ii) = -temp_eigenvectors(row, index);
@@ -124,7 +124,7 @@ bool MatrixEigenvalue::Jacobi(double symmetry_matrix[], int dim, double eigenvec
 	double fm, cn, sn, omega, x, y, d; 
 
 	l = 1;	   
-	for(i = 0; i <= dim-1; i++)// ³õÊ¼»¯ÌØÕ÷ÏòÁ¿¾ØÕóÊ¹Æä·Ç¶Ô½ÇÏßÔªËØÈ«Îª0£¬¶Ô½ÇÏßÔªËØÎª1
+	for(i = 0; i <= dim-1; i++)// åˆå§‹åŒ–ç‰¹å¾å‘é‡çŸ©é˜µä½¿å…¶éå¯¹è§’çº¿å…ƒç´ å…¨ä¸º0ï¼Œå¯¹è§’çº¿å…ƒç´ ä¸º1
 	{     
 		eigenvectors[i*dim + i] = 1.0;   
 		for(j = 0; j <= dim-1; j++)   
@@ -137,9 +137,9 @@ bool MatrixEigenvalue::Jacobi(double symmetry_matrix[], int dim, double eigenvec
 	while (true)
 	{
 		fm = 0.0;   
-		for(i = 0; i <= dim-1; i++)// ÕÒ³ö,¾ØÕósymmetry_matrix(ÌØÕ÷Öµ),ÖĞ³ı¶Ô½ÇÏßÍâÆäËûÔªËØµÄ×î´ó¾ø¶ÔÖµ   
+		for(i = 0; i <= dim-1; i++)// æ‰¾å‡º,çŸ©é˜µsymmetry_matrix(ç‰¹å¾å€¼),ä¸­é™¤å¯¹è§’çº¿å¤–å…¶ä»–å…ƒç´ çš„æœ€å¤§ç»å¯¹å€¼   
 		{   
-			for(j = 0; j <= dim-1; j++)// Õâ¸ö×î´óÖµÊÇÎ»ÓÚsymmetry_matrix[p][q] ,µÈÓÚfm   
+			for(j = 0; j <= dim-1; j++)// è¿™ä¸ªæœ€å¤§å€¼æ˜¯ä½äºsymmetry_matrix[p][q] ,ç­‰äºfm   
 			{   
 				d = fabs(symmetry_matrix[i*dim + j]);   
 
@@ -152,39 +152,39 @@ bool MatrixEigenvalue::Jacobi(double symmetry_matrix[], int dim, double eigenvec
 			}   
 		} 
 
-		if(fm < eps)// ¾«¶È¸´ºÏÒªÇó   
+		if(fm < eps)// ç²¾åº¦å¤åˆè¦æ±‚   
 			return true;   
 
-		if(l > jt)// µü´ú´ÎÊıÌ«¶à   
+		if(l > jt)// è¿­ä»£æ¬¡æ•°å¤ªå¤š   
 			return false;
 
-		l++;// µü´ú¼ÆÊıÆ÷   
+		l++;// è¿­ä»£è®¡æ•°å™¨   
 		u = p*dim + q;   
 		w = p*dim + p;     
 		t = q*dim + p;     
 		s = q*dim + q;   
 		x = -symmetry_matrix[u];   
-		y = (symmetry_matrix[s]-symmetry_matrix[w]) / 2.0;// x yµÄÇó·¨²»Í¬   
-		omega = x / sqrt(x*x + y*y);//sin2¦È  
+		y = (symmetry_matrix[s]-symmetry_matrix[w]) / 2.0;// x yçš„æ±‚æ³•ä¸åŒ   
+		omega = x / sqrt(x*x + y*y);//sin2Î¸  
 
-		//tan2¦È=x/y = -2.0*a[u]/(a[s]-a[w])   
+		//tan2Î¸=x/y = -2.0*a[u]/(a[s]-a[w])   
 		if(y < 0.0)   
 			omega = -omega;
 
 		sn = 1.0 + sqrt(1.0 - omega*omega);     
-		sn = omega / sqrt(2.0*sn);//sin¦È   
-		cn = sqrt(1.0 - sn*sn);//cos¦È
+		sn = omega / sqrt(2.0*sn);//sinÎ¸   
+		cn = sqrt(1.0 - sn*sn);//cosÎ¸
 
-		fm = symmetry_matrix[w];// ±ä»»Ç°µÄsymmetry_matrix[w]   symmetry_matrix[p][p]   
+		fm = symmetry_matrix[w];// å˜æ¢å‰çš„symmetry_matrix[w]   symmetry_matrix[p][p]   
 		symmetry_matrix[w] = fm*cn*cn + symmetry_matrix[s]*sn*sn + symmetry_matrix[u]*omega;   
 		symmetry_matrix[s] = fm*sn*sn + symmetry_matrix[s]*cn*cn - symmetry_matrix[u]*omega;   
 		symmetry_matrix[u] = 0.0;   
 		symmetry_matrix[t] = 0.0;
 
-		// ÒÔÏÂÊÇĞı×ª¾ØÕó,Ğı×ªÁËÁËpĞĞ,qĞĞ,pÁĞ,qÁĞ   
-		// µ«ÊÇËÄ¸öÌØÊâµãÃ»ÓĞĞı×ª(ÕâËÄ¸öµãÔÚÉÏÊöÓï¾äÖĞ·¢ÉúÁË±ä»¯)   
-		// ÆäËû²»ÔÚÕâĞ©ĞĞºÍÁĞµÄµãÒ²Ã»±ä   
-		// Ğı×ª¾ØÕó,Ğı×ªpĞĞºÍqĞĞ   
+		// ä»¥ä¸‹æ˜¯æ—‹è½¬çŸ©é˜µ,æ—‹è½¬äº†äº†pè¡Œ,qè¡Œ,påˆ—,qåˆ—   
+		// ä½†æ˜¯å››ä¸ªç‰¹æ®Šç‚¹æ²¡æœ‰æ—‹è½¬(è¿™å››ä¸ªç‚¹åœ¨ä¸Šè¿°è¯­å¥ä¸­å‘ç”Ÿäº†å˜åŒ–)   
+		// å…¶ä»–ä¸åœ¨è¿™äº›è¡Œå’Œåˆ—çš„ç‚¹ä¹Ÿæ²¡å˜   
+		// æ—‹è½¬çŸ©é˜µ,æ—‹è½¬pè¡Œå’Œqè¡Œ   
 		for(j = 0; j <= dim-1; j++)   
 		{   
 			if((j != p) && (j != q))   
@@ -197,7 +197,7 @@ bool MatrixEigenvalue::Jacobi(double symmetry_matrix[], int dim, double eigenvec
 			}   
 		} 
 		
-		// Ğı×ª¾ØÕó,Ğı×ªpÁĞºÍqÁĞ   
+		// æ—‹è½¬çŸ©é˜µ,æ—‹è½¬påˆ—å’Œqåˆ—   
 		for(i = 0; i <= dim-1; i++)   
 		{   
 			if((i != p) && (i != q))   
@@ -210,7 +210,7 @@ bool MatrixEigenvalue::Jacobi(double symmetry_matrix[], int dim, double eigenvec
 			}   
 		}   
 
-		// ¼ÇÂ¼Ğı×ª¾ØÕóÌØÕ÷ÏòÁ¿   
+		// è®°å½•æ—‹è½¬çŸ©é˜µç‰¹å¾å‘é‡   
 		for(i = 0; i <= dim-1; i++)   
 		{   
 			u = i*dim + p;     

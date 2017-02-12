@@ -1,11 +1,11 @@
-/***************************************************************************
+ï»¿/***************************************************************************
 *
 * Time: 2009-09-21
-* Project: Ò£¸ĞÆ½Ì¨
-* Purpose: ºËĞÄ¿âÎÄ¼ş
-* Author:  ÀîÃñÂ¼
+* Project: é¥æ„Ÿå¹³å°
+* Purpose: æ ¸å¿ƒåº“æ–‡ä»¶
+* Author:  ææ°‘å½•
 * Copyright (c) 2009, liminlu0314@gmail.com
-* Describe:Ìá¹©³£ÓÃµÄÊı¾İÀàĞÍ¶¨ÒåµÈ
+* Describe:æä¾›å¸¸ç”¨çš„æ•°æ®ç±»å‹å®šä¹‰ç­‰
 *
 ****************************************************************************/
 
@@ -14,37 +14,37 @@
 
 /**
 * \file ImgCore.h
-* @brief ºËĞÄÀàĞÍ¶¨Òå
+* @brief æ ¸å¿ƒç±»å‹å®šä¹‰
 *
-* µ¼³ö½Ó¿Ú£¨Ê¹ÓÃCÓïÑÔ·½Ê½£©£¬ºËĞÄÀàĞÍ¶¨Òå
+* å¯¼å‡ºæ¥å£ï¼ˆä½¿ç”¨Cè¯­è¨€æ–¹å¼ï¼‰ï¼Œæ ¸å¿ƒç±»å‹å®šä¹‰
 */
 
 /**
-* ºöÂÔÔÚMS WidowsÆ½Ì¨ÉÏµÄ¾¯¸æ lml 2010-10-19
-* warning C4100: ¡°*¡±: Î´ÒıÓÃµÄĞÎ²Î
-* warning C4190: ¡°identifier1¡±ÓĞÖ¸¶¨µÄ C Á´½Ó£¬µ«·µ»ØÁËÓë C ²»¼æÈİµÄ UDT¡°identifier2¡±
-* warning C4251: Àà¡°type¡±ĞèÒªÓÉÀà¡°type2¡±µÄ¿Í»§¶ËÊ¹ÓÃ dll ½Ó¿Ú
-* warning C4275: ·Ç DLL ½Ó¿ÚÀà¼ü¡°identifier¡±×÷Îª DLL ½Ó¿ÚÀà¼ü¡°identifier¡±µÄ»ùÊ¹ÓÃ
-* warning C4305: ´Ó¡°type1¡±µ½¡°type2¡±½Ø¶Ï
-* warning C4309: ½Ø¶Ï³£ÊıÖµ
-* warning C4819: ¸ÃÎÄ¼ş°üº¬²»ÄÜÔÚµ±Ç°´úÂëÒ³(936)ÖĞ±íÊ¾µÄ×Ö·û¡£Çë½«¸ÃÎÄ¼ş±£´æÎª Unicode ¸ñÊ½ÒÔ·ÀÖ¹Êı¾İ¶ªÊ§
-* warning C4996: Ê¹ÓÃÁË·Ç±ê×¼À©Õ¹: ÏŞ¶¨ÃûÖĞÊ¹ÓÃÁËÃ¶¾Ù
+* å¿½ç•¥åœ¨MS Widowså¹³å°ä¸Šçš„è­¦å‘Š lml 2010-10-19
+* warning C4100: â€œ*â€: æœªå¼•ç”¨çš„å½¢å‚
+* warning C4190: â€œidentifier1â€æœ‰æŒ‡å®šçš„ C é“¾æ¥ï¼Œä½†è¿”å›äº†ä¸ C ä¸å…¼å®¹çš„ UDTâ€œidentifier2â€
+* warning C4251: ç±»â€œtypeâ€éœ€è¦ç”±ç±»â€œtype2â€çš„å®¢æˆ·ç«¯ä½¿ç”¨ dll æ¥å£
+* warning C4275: é DLL æ¥å£ç±»é”®â€œidentifierâ€ä½œä¸º DLL æ¥å£ç±»é”®â€œidentifierâ€çš„åŸºä½¿ç”¨
+* warning C4305: ä»â€œtype1â€åˆ°â€œtype2â€æˆªæ–­
+* warning C4309: æˆªæ–­å¸¸æ•°å€¼
+* warning C4819: è¯¥æ–‡ä»¶åŒ…å«ä¸èƒ½åœ¨å½“å‰ä»£ç é¡µ(936)ä¸­è¡¨ç¤ºçš„å­—ç¬¦ã€‚è¯·å°†è¯¥æ–‡ä»¶ä¿å­˜ä¸º Unicode æ ¼å¼ä»¥é˜²æ­¢æ•°æ®ä¸¢å¤±
+* warning C4996: ä½¿ç”¨äº†éæ ‡å‡†æ‰©å±•: é™å®šåä¸­ä½¿ç”¨äº†æšä¸¾
 */
 #if defined(_MSC_VER) && (_MSC_VER >= 1400)
 #pragma warning(disable: 4100 4190 4251 4275 4305 4309 4819 4996 )
 #endif
 
 /**
-* @brief ÊÇ·ñÊ¹ÓÃVldÄÚ´æĞ¹Â¶¼à²â¹¤¾ß
+* @brief æ˜¯å¦ä½¿ç”¨Vldå†…å­˜æ³„éœ²ç›‘æµ‹å·¥å…·
 */
 #if _USEVLD
-#if _DEBUG	//ÔÚdebugÄ£Ê½ÏÂ¼ì²âÄÚ´æĞ¹Â¶
+#if _DEBUG	//åœ¨debugæ¨¡å¼ä¸‹æ£€æµ‹å†…å­˜æ³„éœ²
 #include "vld.h"
 #endif
 #endif
 
 /**
-* @brief ÊÇ·ñÊ¹ÓÃLOG¹¤¾ß½øĞĞĞ´ÈÕÖ¾
+* @brief æ˜¯å¦ä½¿ç”¨LOGå·¥å…·è¿›è¡Œå†™æ—¥å¿—
 */
 #if _USELOG
 #define USE_LOG4CPP
@@ -62,7 +62,7 @@
 using namespace std;
 
 /**
-* @brief µ¼³ö·ûºÅ¶¨Òå
+* @brief å¯¼å‡ºç¬¦å·å®šä¹‰
 */
 #ifdef IMGALG_EXPORTS
 #define IMGALG_API __declspec(dllexport)
@@ -71,113 +71,113 @@ using namespace std;
 #endif
 
 /**
-* @brief ¶¨ÒåNULL
+* @brief å®šä¹‰NULL
 */
 #ifndef NULL
 #  define NULL  0
 #endif
 
 /**
-* @brief ¶¨ÒåFALSE
+* @brief å®šä¹‰FALSE
 */
 #ifndef FALSE
 #  define FALSE 0
 #endif
 
 /**
-* @brief ¶¨ÒåTRUE
+* @brief å®šä¹‰TRUE
 */
 #ifndef TRUE
 #  define TRUE  1
 #endif
 
 #ifndef MAX
-/*! Çó×î´óÖµ */
+/*! æ±‚æœ€å¤§å€¼ */
 #  define MIN(a, b)      ((a<b) ? a : b)
-/*! Çó×îĞ¡Öµ */
+/*! æ±‚æœ€å°å€¼ */
 #  define MAX(a, b)      ((a>b) ? a : b)
 #endif
 
 /**
-* @brief ¶¨ÒåABS£¬Çó¾ø¶ÔÖµ
+* @brief å®šä¹‰ABSï¼Œæ±‚ç»å¯¹å€¼
 */
 #ifndef ABS
 #  define ABS(x)        ((x<0) ? (-1*(x)) : x)
 #endif
 
 /**
-* @brief ¶¨ÒåPI=3.141592653...ÒÔ¼°¶ÈºÍ»¡¶È×ª»»
+* @brief å®šä¹‰PI=3.141592653...ä»¥åŠåº¦å’Œå¼§åº¦è½¬æ¢
 */
 #ifndef M_PI
-/*! ¶¨ÒåÔ²ÖÜÂÊPI */
+/*! å®šä¹‰åœ†å‘¨ç‡PI */
 # define M_PI  3.1415926535897932384626433832795
-/*! »¡¶È×ª¶È */
+/*! å¼§åº¦è½¬åº¦ */
 # define DEG_PER_RAD      ((double)(180.0/M_PI))
-/*! ¶È×ª»¡¶È */
+/*! åº¦è½¬å¼§åº¦ */
 # define RAD_PER_DEG      ((double)(M_PI/180.0))
 #endif
 
 /**
-* @brief ¶¨ÒåÆ½·½
+* @brief å®šä¹‰å¹³æ–¹
 */
 #ifndef M_SQUARE
 # define M_SQUARE(x)  (x)*(x)
 #endif
 
 /**
-* @brief ¶¨ÒåÁ¢·½
+* @brief å®šä¹‰ç«‹æ–¹
 */
 #ifndef M_CUBE
 # define M_CUBE(x)  (x)*(x)*(x)
 #endif
 
-/*! ÅĞ¶Ï¸¡µãÊıÊÇ·ñNaNÖµ */
+/*! åˆ¤æ–­æµ®ç‚¹æ•°æ˜¯å¦NaNå€¼ */
 inline bool isnan(const float& v)  { return _isnan(v) ? true : false; }
-/*! ÅĞ¶ÏdoubleÊıÊÇ·ñNaNÖµ */
+/*! åˆ¤æ–­doubleæ•°æ˜¯å¦NaNå€¼ */
 inline bool isnan(const double& v) { return _isnan(v) ? true : false; }
-/*! »ñÈ¡doubleµÄNaNÖµ */
+/*! è·å–doubleçš„NaNå€¼ */
 inline double nan() { return numeric_limits<double>::quiet_NaN(); }
 
 /**
-* @brief floatÀàĞÍµÄ¼«Öµ
+* @brief floatç±»å‹çš„æå€¼
 */
 #ifndef FLT_EQUALS
-/*! ¸¡µãÊıÊÇ·ñÏàµÈ */
+/*! æµ®ç‚¹æ•°æ˜¯å¦ç›¸ç­‰ */
 #define FLT_EQUALS(x, y)  (fabs((double)x-y)<FLT_EPSILON)
-/*! ¸¡µãÊıÊÇ·ñÏàµÈ(Ö¸¶¨±È½ÏãĞÖµ) */
+/*! æµ®ç‚¹æ•°æ˜¯å¦ç›¸ç­‰(æŒ‡å®šæ¯”è¾ƒé˜ˆå€¼) */
 #define FLT_EQUALS_N(x, y, z)  (fabs((double)x-y)<z)
 #endif
 
 #ifndef FLT_ZERO
-/*! ¸¡µãÊıÊÇ·ñÎª0 */
+/*! æµ®ç‚¹æ•°æ˜¯å¦ä¸º0 */
 #define FLT_ZERO(x)  (fabs(x)<FLT_EPSILON)
 #endif
 
 /**
-* @brief ÊÍ·ÅÊı×é
+* @brief é‡Šæ”¾æ•°ç»„
 */
 #define RELEASE(x)	if(x!=NULL) {delete []x; x = NULL;}
 
 /**
-* @brief ½«È«¾ÖÇøÓòÉèÎª²Ù×÷ÏµÍ³Ä¬ÈÏÇøÓò
+* @brief å°†å…¨å±€åŒºåŸŸè®¾ä¸ºæ“ä½œç³»ç»Ÿé»˜è®¤åŒºåŸŸ
 */
 #define SET_LOCAL	{ locale::global(locale("")); setlocale(LC_ALL,"Chinese-simplified"); }
 /**
-* @brief »¹Ô­È«¾ÖÇøÓòÉè¶¨
+* @brief è¿˜åŸå…¨å±€åŒºåŸŸè®¾å®š
 */
 #define REVERT_LOCAL	locale::global(locale("C"))
 
 
 #ifndef EQUAL
 #if defined(WIN32) || defined(WIN32CE)
-/*! ±È½Ï×Ö·û´®ÊÇ·ñÏàµÈ */
+/*! æ¯”è¾ƒå­—ç¬¦ä¸²æ˜¯å¦ç›¸ç­‰ */
 #  define EQUALN(a, b, n)           (_strnicmp(a, b, n) == 0)
-/*! ±È½Ï×Ö·û´®ÊÇ·ñÏàµÈ */
+/*! æ¯”è¾ƒå­—ç¬¦ä¸²æ˜¯å¦ç›¸ç­‰ */
 #  define EQUAL(a, b)              (_stricmp(a, b) == 0)
 #else
-/*! ±È½Ï×Ö·û´®ÊÇ·ñÏàµÈ */
+/*! æ¯”è¾ƒå­—ç¬¦ä¸²æ˜¯å¦ç›¸ç­‰ */
 #  define EQUALN(a, b, n)           (strncasecmp(a, b, n) == 0)
-/*! ±È½Ï×Ö·û´®ÊÇ·ñÏàµÈ */
+/*! æ¯”è¾ƒå­—ç¬¦ä¸²æ˜¯å¦ç›¸ç­‰ */
 #  define EQUAL(a, b)              (strcasecmp(a, b) == 0)
 #endif
 #endif
@@ -199,33 +199,33 @@ typedef float			DT_32F;
 /*! 64F */
 typedef double			DT_64F;
 
-/*! ³É¹¦Ö´ĞĞ */
+/*! æˆåŠŸæ‰§è¡Œ */
 const int RE_SUCCESS		= 0;
-/*! ÎÄ¼ş²»´æÔÚ */
+/*! æ–‡ä»¶ä¸å­˜åœ¨ */
 const int RE_FILENOTEXIST	= 1;
-/*! ÎÄ¼ş¸ñÊ½²»±»Ö§³Ö */
+/*! æ–‡ä»¶æ ¼å¼ä¸è¢«æ”¯æŒ */
 const int RE_FILENOTSUPPORT	= 2;
-/*! Í¼ÏñÊı¾İÀàĞÍ²»ÕıÈ· */
+/*! å›¾åƒæ•°æ®ç±»å‹ä¸æ­£ç¡® */
 const int RE_FILETYPEERROR	= 3;
-/*! ´´½¨Í¼ÏñÊ§°Ü */
+/*! åˆ›å»ºå›¾åƒå¤±è´¥ */
 const int RE_CREATEFAILED	= 4;
-/*! ÊäÈë²ÎÊı´íÎó */
+/*! è¾“å…¥å‚æ•°é”™è¯¯ */
 const int RE_PARAMERROR		= 5;
-/*! ÆäËû´íÎó */
+/*! å…¶ä»–é”™è¯¯ */
 const int RE_FAILED			= 6;
-/*! Í¼Ïñ²»´æÔÚ¹«¹²ÇøÓò */
+/*! å›¾åƒä¸å­˜åœ¨å…¬å…±åŒºåŸŸ */
 const int RE_NOSAMEEXTENT	= 7;
-/*! ÓÃ»§È¡Ïû²Ù×÷ */
+/*! ç”¨æˆ·å–æ¶ˆæ“ä½œ */
 const int RE_USERCANCEL		= 8;
-/*! ÎÄ¼şÒÑ¾­±»Ê¹ÓÃ */
+/*! æ–‡ä»¶å·²ç»è¢«ä½¿ç”¨ */
 const int RE_FILEISUESED	= 9;
-/*! ²»Ö§³ÖµÄÏñËØÉî¶È */
+/*! ä¸æ”¯æŒçš„åƒç´ æ·±åº¦ */
 const int RE_DEPTHNOTSUPPORT	= 10;
-/*! ²¨¶ÎÊıÁ¿²»·ûºÏÒªÇó */
+/*! æ³¢æ®µæ•°é‡ä¸ç¬¦åˆè¦æ±‚ */
 const int RE_BANDCOUNTERROR		= 11;
-/*! ÎÄ¼ş²»´æÔÚÍ¶Ó° */
+/*! æ–‡ä»¶ä¸å­˜åœ¨æŠ•å½± */
 const int RE_NOPROJECTION		= 12;
-/*! Í¶Ó°²»Ò»ÖÂ */
+/*! æŠ•å½±ä¸ä¸€è‡´ */
 const int RE_PROJECTIONDIFF		= 13;
 
 #endif// IMGALG_DEFINE_H
