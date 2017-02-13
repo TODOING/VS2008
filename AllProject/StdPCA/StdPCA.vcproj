@@ -92,8 +92,8 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)"
+			OutputDirectory="$(ALLPROJECT_BIN)/$(ConfigurationName)"
+			IntermediateDirectory="$(ALLPROJECT_INTDIR)/$(ConfigurationName)/$(ProjectName)"
 			ConfigurationType="1"
 			CharacterSet="1"
 			WholeProgramOptimization="1"
@@ -117,6 +117,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
+				AdditionalIncludeDirectories="&quot;$(ALLPROJECT_THIRD_PARTY)/gdal_1_10_1_vc9/include&quot;;&quot;$(ALLPROJECT_THIRD_PARTY)/Eigen3&quot;"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
@@ -135,7 +136,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="gdal_i.lib"
 				LinkIncremental="1"
+				AdditionalLibraryDirectories="&quot;$(ALLPROJECT_THIRD_PARTY)/gdal_1_10_1_vc9/lib&quot;"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				OptimizeReferences="2"

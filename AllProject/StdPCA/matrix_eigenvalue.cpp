@@ -25,7 +25,7 @@ bool MatrixEigenvalue::GetMatrixEigen(MyMatrix src_matrix, MyVector &eigenvalues
 		}
 	}
 
-	bool return_value = Jacobi(matrix, dim, matrix_eigenvectors, deps, 100);
+	bool return_value = Jacobi(matrix, dim, matrix_eigenvectors, deps, 500);
 	if (!return_value)
 		return false;
 
@@ -155,8 +155,8 @@ bool MatrixEigenvalue::Jacobi(double symmetry_matrix[], int dim, double eigenvec
 		if(fm < eps)// 精度复合要求   
 			return true;   
 
-		if(l > jt)// 迭代次数太多   
-			return false;
+		//if(l > jt)// 迭代次数太多   
+		//	return false;
 
 		l++;// 迭代计数器   
 		u = p*dim + q;   

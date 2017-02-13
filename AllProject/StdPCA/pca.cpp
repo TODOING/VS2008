@@ -5,6 +5,8 @@
 #include <iostream>
 #include "statistics_io.h"
 
+#include "AlgProcessTime.h"
+
 PCA::PCA(const char *src_file)
 {
 	m_band_mean = NULL;
@@ -16,6 +18,9 @@ PCA::PCA(const char *src_file)
 
 	m_is_covariance = true;
 	m_src_file = src_file;
+
+	m_cache_size = 50;
+	m_image_title_size = 4;
 }
 
 PCA::~PCA()
@@ -36,41 +41,464 @@ int PCA::ExecutePCA(const char* pca_file, int pca_band_count /* = -1 */, bool is
 {
 	m_is_covariance = is_covariance;
 
-	// 第一步，数据预处理，统计每一波段的均值和标准差
-	int return_value = PreProcessData();
-	if (return_value != RE_SUCCESS)
-		return return_value;
+	GDALAllRegister();
+	CPLSetConfigOption("GDAL_FILENAME_IS_UTF8","NO");
+
+	m_src_dataset = (GDALDataset *) GDALOpen(m_src_file, GA_ReadOnly);
+	if (m_src_dataset == NULL)
+		return RE_FILENOTEXIST;
+
+	m_band_count = m_src_dataset->GetRasterCount();
+	m_band_mean = new double[m_band_count];
+	m_band_stad = new double[m_band_count];
+
+	m_sta_io = new PCAStatisticsIO(m_statistics_file, m_band_count);
+	if (!m_sta_io->WriteInit())
+		return RE_FILENOTEXIST;
+
+	m_statistics = fopen(m_statistics_file, "wb");
+	if (m_statistics == NULL)
+		return RE_FILENOTSUPPORT;
+
+	int w = m_src_dataset->GetRasterXSize();
+	int h = m_src_dataset->GetRasterYSize();
+	int band_size = w*h;
+
+	// 获取数据存储类型
+	const char *interleave = m_src_dataset->GetMetadataItem("INTERLEAVE", "IMAGE_STRUCTURE");
+	if (EQUAL(interleave, "BAND"))// BSQ
+	{
+		int m1 = 0;
+	}
+	if (EQUAL(interleave, "PIXEL"))// BIP
+	{
+		int m2 = 0;
+	}
+	if (EQUAL(interleave, "LINE"))// BIL
+	{
+		int m3 = 0;
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	// 分块统计均值和标准差
+	int block_unit = w*m_band_count;
+	int block_h = m_image_title_size * 1024 * 1024 / (block_unit*sizeof(double));
+	int block_nums = h / block_h;
+	int last_block_h = h % block_h;
+	if (last_block_h != 0) block_nums++;
+	
+	// 读取的波段
+	int *band_map = new int[m_band_count];
+	for (int i = 0; i < m_band_count; i++)
+		band_map[i] = i + 1;
+
+	for (int i = 0; i < m_band_count; i++)
+	{
+		m_band_mean[i] = 0.0; 
+		m_band_stad[i] = 0.0;
+	}
+
+	CAlgProcessTime::Alg_start();
+
+	/************************************************************************/
+	/*						统计均值和标准差                                                                     */
+	/************************************************************************/
+	
+	// 统计均值
+	int read_h = block_h;
+	double *block_buf_data = new double[read_h*block_unit];	
+	for (int i = 0; i < block_nums; i++)
+	{
+		if (i == block_nums - 1)
+		{
+			read_h = (h - 1)%block_h + 1;
+			RELEASE(block_buf_data);
+			block_buf_data = new double[read_h*block_unit];
+		}
+		
+		// 按BIP的格式读取图像
+		m_src_dataset->RasterIO(GF_Read, 0, i*block_h, w, read_h, block_buf_data, w, read_h, GDT_Float64,
+			m_band_count, band_map, sizeof(double)*m_band_count, sizeof(double)*m_band_count*w, sizeof(double));
+
+		int band_block_size = read_h*w;
+		for (int b = 0; b < m_band_count; b++)
+		{			
+			for (int j = 0; j < band_block_size; j++)			
+				m_band_mean[b] += block_buf_data[j*m_band_count + b];
+		}
+	}
+	RELEASE(block_buf_data);
+
+	for (int i = 0; i < m_band_count; i++)
+		m_band_mean[i] /= band_size; 
+
+	// 统计标准差
+	read_h = block_h;
+	block_buf_data = new double[read_h*block_unit];
+	for (int i = 0; i < block_nums; i++)
+	{
+		if (i == block_nums - 1)
+		{
+			read_h = (h - 1)%block_h + 1;
+			RELEASE(block_buf_data);
+			block_buf_data = new double[read_h*block_unit];
+		}
+
+		// 按BIP的格式读取图像
+		m_src_dataset->RasterIO(GF_Read, 0, i*block_h, w, read_h, block_buf_data, w, read_h, GDT_Float64,
+			m_band_count, band_map, sizeof(double)*m_band_count, sizeof(double)*m_band_count*w, sizeof(double));
+
+		int band_block_size = read_h*w;
+		for (int b = 0; b < m_band_count; b++)
+		{			
+			for (int j = 0; j < band_block_size; j++)			
+			{
+				double temp = block_buf_data[j*m_band_count + b] - m_band_mean[b];
+				m_band_stad[b] += temp*temp;
+			}
+		}
+	}
+	RELEASE(block_buf_data);
+
+	for (int i = 0; i < m_band_count; i++)
+		m_band_stad[i] = sqrt(m_band_stad[i] / band_size); 
+
+	/************************************************************************/
+	/*						计算协方差或相关系数矩阵                                                                     */
+	/************************************************************************/
+ 	read_h = block_h;
+	block_buf_data = new double[read_h*block_unit];
+	int element_index = 0;
+
+	m_relativity = new double[m_band_count*m_band_count];
+	memset(m_relativity, 0, sizeof(double)*m_band_count*m_band_count);
+	for (int i = 0; i < block_nums; i++)
+	{
+		if (i == block_nums - 1)
+		{
+			read_h = (h - 1)%block_h + 1;
+			RELEASE(block_buf_data);
+			block_buf_data = new double[read_h*block_unit];
+		}
+
+		// 按BIP的格式读取图像
+		m_src_dataset->RasterIO(GF_Read, 0, i*block_h, w, read_h, block_buf_data, w, read_h, GDT_Float64,
+			m_band_count, band_map, sizeof(double)*m_band_count, sizeof(double)*m_band_count*w, sizeof(double));
+
+		// 生成协方差矩阵
+		int band_block_size = read_h*w;		
+		element_index = 0;
+		for (int b1 = 0; b1 < m_band_count; b1++)
+		{
+			for(int b2 = 0; b2 < m_band_count; b2++)
+			{
+				if (b2 < b1)
+				{
+					element_index++;
+					continue;
+				}
+
+				if (b1 == b2)
+				{
+					if (!m_is_covariance)
+						m_relativity[element_index] = 1.0;
+					else
+						m_relativity[element_index] = m_band_stad[b1] * m_band_stad[b1];
+
+					element_index++;
+					continue;
+				}
+
+				for (int k = 0; k < band_block_size; k++)
+				{
+					int offset = k*m_band_count;
+					m_relativity[b1*m_band_count + b2] += (block_buf_data[offset+b1] - m_band_mean[b1])*(block_buf_data[offset+b2] - m_band_mean[b2]);
+				}
+
+				element_index++;
+			}
+		}
+	}
+	RELEASE(block_buf_data);
+
+	// 计算协方差矩阵或相关系数矩阵
+	for(int r = 0; r < m_band_count; r++)
+	{
+		for(int c = 0; c < m_band_count; c++)
+		{
+			int index = r*m_band_count + c;
+
+			if (c < r)
+			{
+				// TODO：有待验证
+				m_relativity[index] = m_relativity[c*m_band_count + r];
+				continue;
+			}
+
+			if (r == c)
+				continue;
+
+			m_relativity[index] /= band_size;				
+			if (!m_is_covariance)// 相关系数
+				m_relativity[index] = m_relativity[index] / (m_band_stad[r]*m_band_stad[c]);
+		}
+	}
+	m_sta_io->WriteMean(m_band_mean);
+
+	CAlgProcessTime::Alg_end();
+	printf("统计均值和协方差矩阵 time = %lf s\n", CAlgProcessTime::GetAlgProcessTime());	
+
+	/************************************************************************/
+	/*						计算特征值和特征向量                                                                     */
+	/************************************************************************/
+	CAlgProcessTime::Alg_start();
+
+	Map<MyMatrix> covariance_matrix(m_relativity, m_band_count, m_band_count);
+	m_relate_matrix = covariance_matrix;
+	m_sta_io->WriteCovarianceOrCorrelation(m_relativity);
+	CalcEigenvaluesAndEigenvectors();
+
+	CAlgProcessTime::Alg_end();
+	printf("计算特征值和特征向量矩阵 time = %lf s\n", CAlgProcessTime::GetAlgProcessTime());
+
+	/************************************************************************/
+	/*						原始数据进行PCA变换                                                                     */
+	/************************************************************************/
+	CAlgProcessTime::Alg_start();
+
+	int new_band_count = m_band_count;
+	if (pca_band_count > 0)
+		new_band_count = pca_band_count;
+
+	MyMatrix select_eigenvectors(m_band_count, new_band_count);
+	for (int i = 0; i < new_band_count; i++)
+	{
+		for (int j = 0; j < m_band_count; j++)
+			select_eigenvectors(j, i) = m_eigenvectors(j, i);
+	}
+
+	m_select_eigenvectors = select_eigenvectors;
+	int dst_band_count = new_band_count;	
+
+	GDALDriver *dst_diver = (GDALDriver *)GDALGetDriverByName(format);
+	GDALDataset *dst_dataset = dst_diver->Create(pca_file, w, h, dst_band_count, m_dst_type, NULL);
+	if ( dst_dataset == NULL )
+		return RE_FILENOTSUPPORT;
+
+	double geo_transform[6] = { 0 };
+	m_src_dataset->GetGeoTransform(geo_transform);
+	dst_dataset->SetGeoTransform(geo_transform);
+	dst_dataset->SetProjection(m_src_dataset->GetProjectionRef());
+
+	//////////////////////////////////////////////////////////////////////////
+	read_h = block_h;
+	block_buf_data = new double[read_h*block_unit];	
+	DT_32F *dst_buffer_data = new DT_32F[read_h*w*dst_band_count];
+
+	int *src_band_map = new int[m_band_count];
+	int *dst_band_map = new int[dst_band_count];
+
+	for (int i = 1; i <= m_band_count; i++)
+		src_band_map[i - 1] = i;
+	for (int i = 1; i <= dst_band_count; i++)
+		dst_band_map[i - 1] = i;
+
+	for (int i = 0; i < block_nums; i++)
+	{
+		if (i == block_nums - 1)
+		{
+			read_h = (h - 1)%block_h + 1;
+			RELEASE(block_buf_data);
+			RELEASE(dst_buffer_data);
+			block_buf_data = new double[read_h*block_unit];
+			dst_buffer_data = new DT_32F[read_h*w*dst_band_count];
+		}
+
+		// 按BIP的格式读取图像
+		m_src_dataset->RasterIO(GF_Read, 0, i*block_h, w, read_h, block_buf_data, w, read_h, GDT_Float64,
+			m_band_count, src_band_map, sizeof(double)*m_band_count, sizeof(double)*m_band_count*w, sizeof(double));
+
+		int band_sample = w*read_h;		
+		for (int j = 0; j < band_sample; j++)
+		{
+			int offset = j*m_band_count;
+			int offset_out = j*dst_band_count;
+
+			for (int k1 = 0; k1 < dst_band_count; k1++)
+			{
+				double temp = 0.0;
+
+				for (int k2 = 0; k2 < m_band_count; k2++)
+				{			
+					temp += block_buf_data[offset + k2] * select_eigenvectors(k2, k1);			
+				}
+
+				dst_buffer_data[offset_out + k1] = (float)temp;
+			}
+		}
+		
+
+		// 按BIP的格式读取图像
+		dst_dataset->RasterIO(GF_Write, 0, i*block_h, w, read_h, dst_buffer_data, w, read_h, GDT_Float32,
+			dst_band_count, dst_band_map, sizeof(float)*dst_band_count, sizeof(float)*dst_band_count*w, sizeof(float));
+	}
+	RELEASE(block_buf_data);
+	RELEASE(dst_buffer_data);
+	RELEASE(src_band_map);
+	RELEASE(dst_band_map);
+
+	GDALClose((GDALDatasetH) dst_dataset);
+
+	CAlgProcessTime::Alg_end();
+	printf("原始数据进行PCA变换 time = %lf s\n", CAlgProcessTime::GetAlgProcessTime());
+	//////////////////////////////////////////////////////////////////////////
+
+
+	/************************************************************************/
+	/*						将结果减去均值，使结果和ENVI一样                                                                     */
+	/************************************************************************/
+
+	//CAlgProcessTime::Alg_start();
+
+	//GDALDataset *pca_dataset = (GDALDataset *) GDALOpen(pca_file, GA_Update);
+	//if (pca_dataset == NULL)
+	//	return RE_FILENOTSUPPORT;
+
+	//int band_count = dst_band_count;
+
+	//// 统计均值
+	//block_unit = w*band_count;
+	//block_h = m_image_title_size * 1024 * 1024 / (block_unit*sizeof(double));
+	//block_nums = h / block_h;
+	//last_block_h = h % block_h;
+	//if (last_block_h != 0) block_nums++;
+
+	//// 读取的波段
+	//RELEASE(band_map);
+	//band_map = new int[band_count];
+	//for (int i = 0; i < band_count; i++)
+	//	band_map[i] = i + 1;
+
+	//double *band_mean = new double[band_count];
+	//memset(band_mean, 0, sizeof(double)*band_count);
+
+	//read_h = block_h;
+	//block_buf_data = new double[read_h*block_unit];	
+	//for (int i = 0; i < block_nums; i++)
+	//{
+	//	if (i == block_nums - 1)
+	//	{
+	//		read_h = (h - 1)%block_h + 1;
+	//		RELEASE(block_buf_data);
+	//		block_buf_data = new double[read_h*block_unit];
+	//	}
+
+	//	// 按BIP的格式读取图像
+	//	pca_dataset->RasterIO(GF_Read, 0, i*block_h, w, read_h, block_buf_data, w, read_h, GDT_Float64,
+	//		band_count, band_map, sizeof(double)*band_count, sizeof(double)*band_count*w, sizeof(double));
+
+	//	int band_block_size = read_h*w;
+	//	for (int b = 0; b < band_count; b++)
+	//	{			
+	//		for (int j = 0; j < band_block_size; j++)			
+	//			band_mean[b] += block_buf_data[j*band_count + b];
+	//	}
+	//}
+	//RELEASE(block_buf_data);
+
+	//for (int i = 0; i < band_count; i++)
+	//	band_mean[i] /= band_size;
+
+	//// 减均值
+	//read_h = block_h;
+	//block_buf_data = new double[read_h*block_unit];	
+	//for (int i = 0; i < block_nums; i++)
+	//{
+	//	if (i == block_nums - 1)
+	//	{
+	//		read_h = (h - 1)%block_h + 1;
+	//		RELEASE(block_buf_data);
+	//		block_buf_data = new double[read_h*block_unit];
+	//	}
+
+	//	// 按BIP的格式读取图像
+	//	/*pca_dataset->RasterIO(GF_Read, 0, i*block_h, w, read_h, block_buf_data, w, read_h, GDT_Float64,
+	//		band_count, band_map, sizeof(double)*band_count, sizeof(double)*band_count*w, sizeof(double));*/
+	//	pca_dataset->RasterIO(GF_Read, 0, i*block_h, w, read_h, block_buf_data, w, read_h, GDT_Float64,
+	//		band_count, band_map, 0, 0, 0);
+
+	//	int band_block_size = read_h*w;
+	//	for (int b = 0; b < band_count; b++)
+	//	{			
+	//		for (int j = 0; j < band_block_size; j++)			
+	//			block_buf_data[j*band_count + b] = block_buf_data[j*band_count + b] - band_mean[b];
+	//	}
+
+	//	/*pca_dataset->RasterIO(GF_Write, 0, i*block_h, w, read_h, block_buf_data, w, read_h, GDT_Float64,
+	//		band_count, band_map, sizeof(float)*band_count, sizeof(float)*band_count*w, sizeof(float));*/
+	//	pca_dataset->RasterIO(GF_Write, 0, i*block_h, w, read_h, block_buf_data, w, read_h, GDT_Float64,
+	//		band_count, band_map, 0, 0, 0);
+	//}
+	//RELEASE(block_buf_data);
+	//GDALClose((GDALDatasetH) pca_dataset);
+
+	///*DT_32F *buffer_data = new DT_32F[w];	
+	//for (int b = 1; b <= band_count; b++)
+	//{
+	//	GDALRasterBand *band = pca_dataset->GetRasterBand(b);
+	//	for (int i = 0; i < h; i++)
+	//	{
+	//		band->RasterIO(GF_Read, 0, i, w, 1, buffer_data, w, 1, GDT_Float32, 0, 0);
+
+	//		for (int j = 0; j < w; j++)
+	//			buffer_data[j] = buffer_data[j] - band_mean[b-1];
+
+	//		band->RasterIO(GF_Write, 0, i, w, 1, buffer_data, w, 1, GDT_Float32, 0, 0);
+	//	}
+	//}*/
+
+	//CAlgProcessTime::Alg_end();
+	//printf("减去均值（ENVI） time = %lf s\n", CAlgProcessTime::GetAlgProcessTime());
+
+
 
 	// 第二步，计算协方差矩阵和相关系数矩阵R，以及内部求特征值和特征向量
-	return_value = CalcCovarianceMartix();
-	if (return_value != RE_SUCCESS)
-		return return_value;
+	//return_value = CalcCovarianceMartix();
+	/*if (return_value != RE_SUCCESS)
+		return return_value;*/
+
+	//CAlgProcessTime::Alg_end();
+	//printf("CalcCovarianceMartix time = %lf s\n", CAlgProcessTime::GetAlgProcessTime());
 
 	// 计算主成分得分，并写入到文件中
-	return_value = CreatePCAFile(pca_file, pca_band_count, format);
-	if (return_value != RE_SUCCESS)
-		return return_value;
+	//return_value = CreatePCAFile(pca_file, pca_band_count, format);
 
-	if (is_like_envi)
+	//if (return_value != RE_SUCCESS)
+	//	return return_value;
+	//if (is_like_envi)
+	//{
+	/*if (is_like_envi)
 	{
-		if (m_dst_type == GDT_Byte)
-			return_value = CalcSubAvg<byte>(pca_file);
-		else if (m_dst_type == GDT_UInt16)
-			return_value = CalcSubAvg<DT_16U>(pca_file);
-		else if (m_dst_type == GDT_Int16)
-			return_value = CalcSubAvg<DT_16S>(pca_file);
-		else if (m_dst_type == GDT_UInt32)
-			return_value = CalcSubAvg<DT_32U>(pca_file);
-		else if (m_dst_type == GDT_Int32)
-			return_value = CalcSubAvg<DT_32S>(pca_file);
-		else if (m_dst_type == GDT_Float32)
-			return_value = CalcSubAvg<DT_32F>(pca_file);
-		else if (m_dst_type == GDT_Float64)
-			return_value = CalcSubAvg<DT_64F>(pca_file);
-		
-		if (return_value != RE_SUCCESS)
-			return return_value;
-	}
+		CalcSubAvg(pca_file);
+	}*/
+	//	if (m_dst_type == GDT_Byte)
+	//		return_value = CalcSubAvg<byte>(pca_file);
+	//	else if (m_dst_type == GDT_UInt16)
+	//		return_value = CalcSubAvg<DT_16U>(pca_file);
+	//	else if (m_dst_type == GDT_Int16)
+	//		return_value = CalcSubAvg<DT_16S>(pca_file);
+	//	else if (m_dst_type == GDT_UInt32)
+	//		return_value = CalcSubAvg<DT_32U>(pca_file);
+	//	else if (m_dst_type == GDT_Int32)
+	//		return_value = CalcSubAvg<DT_32S>(pca_file);
+	//	else if (m_dst_type == GDT_Float32)
+	//		return_value = CalcSubAvg<DT_32F>(pca_file);
+	//	else if (m_dst_type == GDT_Float64)
+	//		return_value = CalcSubAvg<DT_64F>(pca_file);
+	//	
+	//	if (return_value != RE_SUCCESS)
+	//		return return_value;
+	//}
 
 	return RE_SUCCESS;
 }
@@ -101,114 +529,230 @@ int PCA::PreProcessData()
 	if (!m_sta_io->WriteInit())
 		return RE_FILENOTEXIST;
 
-	m_statistics = fopen(m_statistics_file, "w");
+	m_statistics = fopen(m_statistics_file, "wb");
 	if (m_statistics == NULL)
 		return RE_FILENOTSUPPORT;
 
 	int w = m_src_dataset->GetRasterXSize();
 	int h = m_src_dataset->GetRasterYSize();
+	int band_size = w*h;
+
+	// 获取数据存储类型
+	//const char *interleave = m_src_dataset->GetMetadataItem("INTERLEAVE", "IMAGE_STRUCTURE");
+	//if (EQUAL(interleave, "BAND"))// BSQ
+	//{
+	//	int m1 = 0;
+	//}
+	//if (EQUAL(interleave, "PIXEL"))// BIP
+	//{
+	//	int m2 = 0;
+	//}
+	//if (EQUAL(interleave, "LINE"))// BIL
+	//{
+	//	int m3 = 0;
+	//}
+
+	//////////////////////////////////////////////////////////////////////////
+	// 分块统计均值和标准差
+	int block_unit = w*m_band_count;
+	int block_h = m_image_title_size * 1024 * 1024 / (block_unit*sizeof(double));
+	int block_nums = h / block_h;
+	int last_block_h = h % block_h;
+	if (last_block_h != 0) block_nums++;
 	
-	int size = w*h;
-	double total = 0.0;
-	double stddev_ = 0.0; 
-	double mean_ = 0.0;
+	// 读取的波段
+	int *band_map = new int[m_band_count];
+	for (int i = 0; i < m_band_count; i++)
+		band_map[i] = i + 1;
 
-	int block_heights = 16*1024*1024 / w;
-	int block_nums = h / block_heights;
-	int left_heights = h % block_heights;
-	int block_element = w*block_heights;
+	for (int i = 0; i < m_band_count; i++)
+	{
+		m_band_mean[i] = 0.0; 
+		m_band_stad[i] = 0.0;
+	}
 
-	int read_heights = block_heights;
+	CAlgProcessTime::Alg_start();
 
-	if (left_heights != 0)
-		block_nums += 1;
-
-	double *buf = new double[w*h*0.1*0.1];
-	m_src_dataset->GetRasterBand(1)->RasterIO(GF_Read, 0, 0, w, h, buf, w*0.1, h*0.1, GDT_Float64, 0, 0);
-
-	GDALRasterBand *band = m_src_dataset->GetRasterBand(1);
-	double *block_buf = new double[w*block_heights];
+	/************************************************************************/
+	/*						统计均值和标准差                                                                     */
+	/************************************************************************/
+	
+	// 统计均值
+	int read_h = block_h;
+	double *block_buf_data = new double[read_h*block_unit];	
 	for (int i = 0; i < block_nums; i++)
 	{
 		if (i == block_nums - 1)
 		{
-			read_heights = h - (block_nums-1)*block_heights;
-			block_element = w*read_heights;
-			RELEASE(block_buf);
-			block_buf = new double[block_element];
+			read_h = (h - 1)%block_h + 1;
+			RELEASE(block_buf_data);
+			block_buf_data = new double[read_h*block_unit];
 		}
-
-		band->RasterIO(GF_Read, 0, i*block_heights, w, read_heights, block_buf, w, read_heights, GDT_Float64, 0, 0);
-
-		for (int j = 0; j < block_element; j++)
-		{
-			total += block_buf[j];
-		}
-	}
-
-	RELEASE(block_buf);
-	mean_ = total / size;
-
-	total = 0.0;
-
-	//////////////////////////////////////////////////////////////////////////
-	double *bufline = new double[w];
-	
-	for (int i = 0; i < h; i++)
-	{
-		band->RasterIO(GF_Read, 0, i, w, 1, bufline, w, 1, GDT_Float64, 0, 0);
-		for (int j = 0; j < w; j++)
-		{
-			total += bufline[j];
-		}
-	}
-
-	mean_ = total / size;
-
-	total = 0.0;
-	for (int i = 0; i < h; i++)
-	{
-		band->RasterIO(GF_Read, 0, i, w, 1, bufline, w, 1, GDT_Float64, 0, 0);
-		for (int j = 0; j < w; j++)
-		{
-			total += (bufline[j] - mean_)*(bufline[j] - mean_);
-		}
-	}
-	stddev_ = sqrt(total/size);
-
-	
-	//////////////////////////////////////////////////////////////////////////
-	/*double *buf = new double[w*h];
-	m_src_dataset->GetRasterBand(1)->RasterIO(GF_Read, 0, 0, w, h, buf, w, h, GDT_Float64, 0, 0);*/
-
-	
-	for (int i = 0; i < size; i++)
-	{
-		total += buf[i];
-	}
-
-	mean_ = total / size;
-
-	total = 0.0;
-	for (int i = 0; i < size; i++)
-	{
-		total += (buf[i] - mean_)*(buf[i] - mean_);
-	}
-
-	stddev_ = sqrt(total/size);
-	//////////////////////////////////////////////////////////////////////////
-
-	double max_value, min_value;
-	//fprintf(m_statistics, "band			min			max			mean		stddev\n");
-	for (int i = 1; i <= m_band_count; i++)
-	{
-		m_src_dataset->GetRasterBand(i)->ComputeStatistics(FALSE, &min_value, &max_value, 
-			m_band_mean + (i - 1), m_band_stad + (i - 1), NULL, NULL);
 		
-		//fprintf(m_statistics, "%-6d %-16.6f %-16.6f %-16.6f %-16.6f\n", i, min_value, max_value, m_band_mean[i-1], m_band_stad[i-1]);
+		// 按BIP的格式读取图像
+		m_src_dataset->RasterIO(GF_Read, 0, i*block_h, w, read_h, block_buf_data, w, read_h, GDT_Float64,
+			m_band_count, band_map, sizeof(double)*m_band_count, sizeof(double)*m_band_count*w, sizeof(double));
+
+		int band_block_size = read_h*w;
+		for (int b = 0; b < m_band_count; b++)
+		{			
+			for (int j = 0; j < band_block_size; j++)			
+				m_band_mean[b] += block_buf_data[j*m_band_count + b];
+		}
+	}
+	RELEASE(block_buf_data);
+
+	for (int i = 0; i < m_band_count; i++)
+		m_band_mean[i] /= band_size; 
+
+	// 统计标准差
+	read_h = block_h;
+	block_buf_data = new double[read_h*block_unit];
+	for (int i = 0; i < block_nums; i++)
+	{
+		if (i == block_nums - 1)
+		{
+			read_h = (h - 1)%block_h + 1;
+			RELEASE(block_buf_data);
+			block_buf_data = new double[read_h*block_unit];
+		}
+
+		// 按BIP的格式读取图像
+		m_src_dataset->RasterIO(GF_Read, 0, i*block_h, w, read_h, block_buf_data, w, read_h, GDT_Float64,
+			m_band_count, band_map, sizeof(double)*m_band_count, sizeof(double)*m_band_count*w, sizeof(double));
+
+		int band_block_size = read_h*w;
+		for (int b = 0; b < m_band_count; b++)
+		{			
+			for (int j = 0; j < band_block_size; j++)			
+			{
+				double temp = block_buf_data[j*m_band_count + b] - m_band_mean[b];
+				m_band_stad[b] += temp*temp;
+			}
+		}
+	}
+	RELEASE(block_buf_data);
+
+	for (int i = 0; i < m_band_count; i++)
+		m_band_stad[i] = sqrt(m_band_stad[i] / band_size); 
+
+	/************************************************************************/
+	/*						计算协方差或相关系数矩阵                                                                     */
+	/************************************************************************/
+	read_h = block_h;
+	block_buf_data = new double[read_h*block_unit];
+	int element_index = 0;
+
+	m_relativity = new double[m_band_count*m_band_count];
+	memset(m_relativity, 0, sizeof(double)*m_band_count*m_band_count);
+	for (int i = 0; i < block_nums; i++)
+	{
+		if (i == block_nums - 1)
+		{
+			read_h = (h - 1)%block_h + 1;
+			RELEASE(block_buf_data);
+			block_buf_data = new double[read_h*block_unit];
+		}
+
+		// 按BIP的格式读取图像
+		m_src_dataset->RasterIO(GF_Read, 0, i*block_h, w, read_h, block_buf_data, w, read_h, GDT_Float64,
+			m_band_count, band_map, sizeof(double)*m_band_count, sizeof(double)*m_band_count*w, sizeof(double));
+
+		// 生成协方差矩阵
+		int band_block_size = read_h*w;		
+		element_index = 0;
+		for (int b1 = 0; b1 < m_band_count; b1++)
+		{
+			for(int b2 = 0; b2 < m_band_count; b2++)
+			{
+				if (b2 < b1)
+				{
+					// TODO：有待验证
+					//m_relativity[element_index] = m_relativity[b2*m_band_count + b1];
+
+					element_index++;
+					continue;
+				}
+
+				if (b1 == b2)
+				{
+					if (!m_is_covariance)
+						m_relativity[element_index] = 1.0;
+					else
+						m_relativity[element_index] = m_band_stad[b1] * m_band_stad[b1];
+
+					element_index++;
+					continue;
+				}
+
+				for (int k = 0; k < band_block_size; k++)
+				{
+					int offset = k*m_band_count;
+					m_relativity[b1*m_band_count + b2] += (block_buf_data[offset+b1] - m_band_mean[b1])*(block_buf_data[offset+b2] - m_band_mean[b2]);
+				}
+
+				element_index++;
+			}
+		}
+
+		/*for (int b = 0; b < m_band_count; b++)
+		{			
+			for (int j = 0; j < band_block_size; j++)			
+			{
+				double temp = block_buf_data[j*m_band_count + b] - m_band_mean[b];
+				m_band_stad[b] += temp*temp;
+			}
+		}*/
+	}
+	RELEASE(block_buf_data);
+
+	// 计算协方差矩阵或相关系数矩阵
+	for(int r = 0; r < m_band_count; r++)
+	{
+		for(int c = 0; c < m_band_count; c++)
+		{
+			int index = r*m_band_count + c;
+
+			if (c < r)
+			{
+				// TODO：有待验证
+				m_relativity[index] = m_relativity[c*m_band_count + r];
+				continue;
+			}
+
+			if (r == c)
+				continue;
+
+			m_relativity[index] /= band_size;				
+			if (!m_is_covariance)// 相关系数
+				m_relativity[index] = m_relativity[index] / (m_band_stad[r]*m_band_stad[c]);
+		}
 	}
 	m_sta_io->WriteMean(m_band_mean);
-	//fprintf(m_statistics, "\n\n");
+
+	CAlgProcessTime::Alg_end();
+	printf("统计均值和协方差矩阵 time = %lf s\n", CAlgProcessTime::GetAlgProcessTime());	
+
+	/************************************************************************/
+	/*						计算特征值和特征向量                                                                     */
+	/************************************************************************/
+	CAlgProcessTime::Alg_start();
+
+	Map<MyMatrix> covariance_matrix(m_relativity, m_band_count, m_band_count);
+	m_relate_matrix = covariance_matrix;
+	m_sta_io->WriteCovarianceOrCorrelation(m_relativity);
+	CalcEigenvaluesAndEigenvectors();
+
+	CAlgProcessTime::Alg_end();
+	printf("计算特征值和特征向量矩阵 time = %lf s\n", CAlgProcessTime::GetAlgProcessTime());
+
+	/************************************************************************/
+	/*						原始数据进行PCA变换                                                                     */
+	/************************************************************************/
+	//int new_band_count = m_band_count;
+	//if (pca_band_count > 0)
+	//	new_band_count = pca_band_count;
+
 
 	return RE_SUCCESS;
 }

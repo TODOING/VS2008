@@ -111,6 +111,8 @@ private:
 	PCAStatisticsIO *m_sta_io;
 	
 	GDALDataType m_dst_type;	// 目标数据类型，参照gdal.h中的GDALDataType, // 只允许保存（GDT_Int16, GDT_Int32, GDT_Float32, GDT_Float64等4种类型）
+	int m_cache_size;
+	int m_image_title_size;
 };
 
 #endif// PCA_H
