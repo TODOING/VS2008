@@ -4,37 +4,47 @@
 
 int main()
 {
-	//const char *src_file = "D:\\Data\\PCA\\qb_boulder_msi.img";
-	//const char *pca_file = "D:\\Data\\PCA\\Temp\\qb_pca_my4_0_精确统计.tif";
-	
-	//const char *src_file = "D:\\Data\\PCA\\can_tmr.img";
-	//const char *pca_file = "D:\\Data\\PCA\\Temp\\my\\can_tmr_my6_new_0.tif";
-	//const char *statistic_file = "D:\\Data\\PCA\\Temp\\my\\can_tmr6_new_0.sta";
+	//const char *src_file = "D:\\Data\\PCA\\CASI_2012_09_08_145508_g.img";
+	//const char *pca_file = "D:\\Data\\PCA\\Temp\\my\\CASI_2012_09_08_145508_g_my6_int32_0.tif";
+	//const char *statistic_file = "D:\\Data\\PCA\\Temp\\my\\CASI_2012_09_08_145508_g_my6_int32_0.sta";
 
-	const char *src_file = "D:\\Data\\PCA\\CASI_2012_09_08_145508_g.img";
-	const char *pca_file = "D:\\Data\\PCA\\Temp\\my\\CASI_2012_09_08_145508_g_my24_3.tif";
-	const char *statistic_file = "D:\\Data\\PCA\\Temp\\my\\CASI_2012_09_08_145508_g24_3.sta";
+	//const char *src_file = "D:\\Data\\PCA\\EO1H1320422004339110PZ_B.img";
+	//const char *pca_file = "D:\\Data\\PCA\\Temp\\my\\EO1H1320422004339110PZ_B_my6_int32_0.tif";
+	//const char *statistic_file = "D:\\Data\\PCA\\Temp\\my\\EO1H1320422004339110PZ_B_my6_int32_0.sta";
 
 	//const char *src_file = "D:\\Data\\PCA\\CASI_2012_09_08_145508_g_BSQ.img";
-	//const char *pca_file = "D:\\Data\\PCA\\Temp\\my\\CASI_2012_09_08_145508_g_my24_BSQ_0.tif";
-	//const char *statistic_file = "D:\\Data\\PCA\\Temp\\my\\CASI_2012_09_08_145508_g_my24_BSQ_0.sta";
+	//const char *pca_file = "D:\\Data\\PCA\\Temp\\my\\CASI_2012_09_08_145508_g_my6_BSQ_2.tif";
+	//const char *statistic_file = "D:\\Data\\PCA\\Temp\\my\\CASI_2012_09_08_145508_g_my6_BSQ_2.sta";
 
-	//const char *src_file = "D:\\Data\\PCA\\MCD43B3.A2016185.Albedo_BSA_Band_JL.tif";
-	//const char *pca_file = "D:\\Data\\PCA\\Temp\\MCD43B3.tif";
+	//////////////////////////////////////////////////////////////////////////
+	// 正变换
+	//const char *src_file = "D:\\Data\\PCA\\can_tmr.img";
+	//const char *pca_file = "D:\\Data\\PCA\\Temp\\my\\can_tmr_my6_new_20.tif";
+	//const char *statistic_file = "D:\\Data\\PCA\\Temp\\my\\can_tmr6_new_20.sta";
 
-	/*const char *src_file = "D:\\Data\\PCA\\Temp\\my\\can_tmr_my6_11.tif";
-	const char *inverse_pca_file = "D:\\Data\\PCA\\Temp\\my\\can_tmr_my6_21_inverse_pca.tif";
-	const char *statistic_file = "D:\\Data\\PCA\\Temp\\my\\can_tmr6_11.sta";*/
+	//const char *src_file = "D:\\Data\\PCA\\EO1H1320422004339110PZ_B.img";
+	//const char *pca_file = "D:\\Data\\PCA\\Temp\\my\\EO1H1320422004339110PZ_B_my163_Float32_2.tif";
+	//const char *statistic_file = "D:\\Data\\PCA\\Temp\\my\\EO1H1320422004339110PZ_B_my163_Float32_2.sta";
+
+	const char *src_file = "D:\\Data\\PCA\\CASI_2012_09_08_145508_g_BSQ.img";
+	const char *pca_file = "D:\\Data\\PCA\\Temp\\my\\CASI_2012_09_08_145508_g_my6_BSQ_5.tif";
+	const char *statistic_file = "D:\\Data\\PCA\\Temp\\my\\CASI_2012_09_08_145508_g_my6_BSQ_5.sta";
+
+
+	// 逆变换
+	//const char *src_file = "D:\\Data\\PCA\\Temp\\my\\can_tmr_my6_new_15.tif";
+	//const char *inverse_pca_file = "D:\\Data\\PCA\\Temp\\my\\can_tmr_my6_15_inverse_pca.tif";
+	//const char *statistic_file = "D:\\Data\\PCA\\Temp\\my\\can_tmr6_new_15.sta";
+	//////////////////////////////////////////////////////////////////////////
 
 	PCA pca(src_file);
-	//CAlgProcessTime::Alg_start();
+	
 
 	pca.ExecutePCA(pca_file, statistic_file, 24, GDT_Float32);
-	//pca.ExecuteInversePCA(inverse_pca_file, statistic_file, GDT_Int16);
-
-	//CAlgProcessTime::Alg_end();
-
-	//printf("time = %lf s\n", CAlgProcessTime::GetAlgProcessTime());
+	
+	/*CAlgProcessTime::Alg_start();
+	pca.ExecuteInversePCA(inverse_pca_file, statistic_file, GDT_Byte);
+	CAlgProcessTime::Alg_end("执行InversePCA算法总耗时为");*/
 
 	system("pause");
 	return 0;

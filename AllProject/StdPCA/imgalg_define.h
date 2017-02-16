@@ -233,6 +233,11 @@ const int RE_NOPROJECTION		= 12;
 const int RE_PROJECTIONDIFF		= 13;
 
 /*! 图像数据类型不支持 */
-const int RE_FILETYPNOSUPPORT	= 14;
+const int RE_DATATYPNOSUPPORT	= 14;
+
+// 1Mb的字节数
+#ifndef Mb
+#define Mb 1048576
+#endif
 
 #endif// IMGALG_DEFINE_H
