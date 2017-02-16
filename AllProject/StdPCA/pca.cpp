@@ -799,7 +799,7 @@ int PCA::RunPCA_New(const char *pca_file, int pca_band_count, bool is_float, boo
 	CAlgProcessTime::Alg_start();
 
 	/************************************************************************/
-	/*						统计均值和标准差                                                                     */
+	/*						统计均值，标准差，协方差或相关系数矩阵                                                                     */
 	/************************************************************************/
 
 	// 统计均值
@@ -876,115 +876,6 @@ int PCA::RunPCA_New(const char *pca_file, int pca_band_count, bool is_float, boo
 			}
 		}
 	}
-
-	//// 统计标准差
-	//read_h = block_h;
-	//block_buf_data = new T1[read_h*block_unit];
-
-	//for (int i = 0; i < block_nums; i++)
-	//{
-	//	if (i == block_nums - 1)
-	//	{
-	//		read_h = (h - 1)%block_h + 1;
-	//		RELEASE(block_buf_data);
-	//		block_buf_data = new T1[read_h*block_unit];
-	//	}
-
-	//	m_src_dataset->RasterIO(GF_Read, 0, i*block_h, w, read_h, block_buf_data, w, read_h, m_src_datatype,
-	//		m_band_count, band_map, sizeof(T1)*m_band_count, sizeof(T1)*m_band_count*w, sizeof(T1));
-
-	//	int band_block_size = read_h*w;
-	//	for (int b = 0; b < m_band_count; b++)
-	//	{			
-	//		for (int j = 0; j < band_block_size; j++)			
-	//		{
-	//			double temp = block_buf_data[j*m_band_count + b] - m_band_mean[b];
-	//			m_band_stad[b] += temp*temp;
-	//		}
-	//	}
-	//}
-	//RELEASE(block_buf_data);
-
-	//for (int i = 0; i < m_band_count; i++)
-	//	m_band_stad[i] = sqrt(m_band_stad[i] / band_size);
-
-	///************************************************************************/
-	///*						计算协方差或相关系数矩阵                   */
-	///************************************************************************/
-	//read_h = block_h;
-	//block_buf_data = new T1[read_h*block_unit];
-
-	//int element_index;
-	//for (int i = 0; i < block_nums; i++)
-	//{
-	//	if (i == block_nums - 1)
-	//	{
-	//		read_h = (h - 1)%block_h + 1;
-	//		RELEASE(block_buf_data);
-	//		block_buf_data = new T1[read_h*block_unit];
-	//	}
-
-	//	m_src_dataset->RasterIO(GF_Read, 0, i*block_h, w, read_h, block_buf_data, w, read_h, m_src_datatype,
-	//		m_band_count, band_map, sizeof(T1)*m_band_count, sizeof(T1)*m_band_count*w, sizeof(T1));
-
-	//	int band_block_size = read_h*w;		
-	//	element_index = 0;
-	//	for (int b1 = 0; b1 < m_band_count; b1++)
-	//	{
-	//		for(int b2 = 0; b2 < m_band_count; b2++)
-	//		{
-	//			if (b2 < b1)
-	//			{
-	//				element_index++;
-	//				continue;
-	//			}
-
-	//			if (b1 == b2)
-	//			{
-	//				if (m_is_covariance)
-	//					m_covariance_or_relativity[element_index] = m_band_stad[b1] * m_band_stad[b1];
-	//				else// 相关系数
-	//					m_covariance_or_relativity[element_index] = 1.0;						
-
-	//				element_index++;
-	//				continue;
-	//			}
-
-	//			for (int k = 0; k < band_block_size; k++)
-	//			{
-	//				int offset = k*m_band_count;
-	//				m_covariance_or_relativity[b1*m_band_count + b2] += 
-	//					(block_buf_data[offset+b1] - m_band_mean[b1])*(block_buf_data[offset+b2] - m_band_mean[b2]);
-	//			}
-
-	//			element_index++;
-	//		}
-	//	}
-	//}
-	//RELEASE(block_buf_data);
-	//RELEASE(band_map);
-
-	//// 计算协方差矩阵或相关系数矩阵
-	//for(int r = 0; r < m_band_count; r++)
-	//{
-	//	for(int c = 0; c < m_band_count; c++)
-	//	{
-	//		int index = r*m_band_count + c;
-
-	//		if (c < r)
-	//		{
-	//			m_covariance_or_relativity[index] = m_covariance_or_relativity[c*m_band_count + r];
-	//			continue;
-	//		}
-
-	//		if (r == c)
-	//			continue;
-
-	//		m_covariance_or_relativity[index] /= band_size;				
-	//		if (!m_is_covariance)// 相关系数
-	//			m_covariance_or_relativity[index] = m_covariance_or_relativity[index] / (m_band_stad[r]*m_band_stad[c]);
-	//	}
-	//}
 	m_sta_io->WriteMean(m_band_mean);
 
 	CAlgProcessTime::Alg_end("统计均值和协方差矩阵");
@@ -994,7 +885,6 @@ int PCA::RunPCA_New(const char *pca_file, int pca_band_count, bool is_float, boo
 	/************************************************************************/
 	CAlgProcessTime::Alg_start();
 
-	//Map<MyMatrix> covariance_matrix(m_covariance_or_relativity, m_band_count, m_band_count);
 	MyExtMatrix covariance_matrix(m_covariance_or_relativity, m_band_count, m_band_count);
 	m_covar_or_relate_matrix = covariance_matrix;
 	m_sta_io->WriteCovarianceOrCorrelation(m_covariance_or_relativity);
@@ -1094,92 +984,6 @@ int PCA::RunPCA_New(const char *pca_file, int pca_band_count, bool is_float, boo
 
 	CAlgProcessTime::Alg_end("原始数据进行PCA变换");
 	//////////////////////////////////////////////////////////////////////////
-
-	/************************************************************************/
-	/*						将结果减去均值，使结果和ENVI一样                                                                     */
-	/************************************************************************/
-	if (!is_like_envi)
-	{
-		CAlgProcessTime::Alg_start();
-
-		GDALDataset *pca_dataset = (GDALDataset *) GDALOpen(pca_file, GA_Update);
-		if (pca_dataset == NULL)
-			return RE_FILENOTSUPPORT;
-
-		// 统计均值
-		int band_count = dst_band_count;
-		block_unit = w*band_count;
-		block_h = m_image_title_size * Mb / (block_unit*sizeof(T2));
-		block_nums = h / block_h;
-		last_block_h = h % block_h;
-		if (last_block_h != 0) block_nums++;
-
-		// 读取的波段
-		band_map = new int[band_count];
-		for (int i = 0; i < band_count; i++)
-			band_map[i] = i + 1;
-
-		double *band_mean = new double[band_count];
-		memset(band_mean, 0, sizeof(double)*band_count);
-
-		read_h = block_h;
-		T2 *block_buf_data = new T2[read_h*block_unit];	
-		for (int i = 0; i < block_nums; i++)
-		{
-			if (i == block_nums - 1)
-			{
-				read_h = (h - 1)%block_h + 1;
-				RELEASE(block_buf_data);
-				block_buf_data = new T2[read_h*block_unit];
-			}
-
-			// 按BIP的格式读取图像
-			pca_dataset->RasterIO(GF_Read, 0, i*block_h, w, read_h, block_buf_data, w, read_h, m_dst_datatype,
-				band_count, band_map, sizeof(T2)*band_count, sizeof(T2)*band_count*w, sizeof(T2));
-
-			int band_block_size = read_h*w;
-			for (int b = 0; b < band_count; b++)
-			{			
-				for (int j = 0; j < band_block_size; j++)			
-					band_mean[b] += block_buf_data[j*band_count + b];
-			}
-		}
-		RELEASE(block_buf_data);
-
-		for (int i = 0; i < band_count; i++)
-			band_mean[i] /= band_size;
-
-		// 减均值
-		read_h = block_h;
-		block_buf_data = new T2[read_h*block_unit];	
-		for (int i = 0; i < block_nums; i++)
-		{
-			if (i == block_nums - 1)
-			{
-				read_h = (h - 1)%block_h + 1;
-				RELEASE(block_buf_data);
-				block_buf_data = new T2[read_h*block_unit];
-			}
-
-			pca_dataset->RasterIO(GF_Read, 0, i*block_h, w, read_h, block_buf_data, w, read_h, m_dst_datatype,
-				band_count, band_map, sizeof(T2)*band_count, sizeof(T2)*band_count*w, sizeof(T2));
-
-			int band_block_size = read_h*w;
-			for (int b = 0; b < band_count; b++)
-			{
-				for (int j = 0; j < band_block_size; j++)			
-					block_buf_data[j*band_count + b] = is_float ? (T2)(block_buf_data[j*band_count + b] - band_mean[b]) : (T2)floor(block_buf_data[j*band_count + b] - band_mean[b] + 0.5) ;
-			}
-
-			pca_dataset->RasterIO(GF_Write, 0, i*block_h, w, read_h, block_buf_data, w, read_h, m_dst_datatype,
-				band_count, band_map, sizeof(T2)*band_count, sizeof(T2)*band_count*w, sizeof(T2));
-		}
-		RELEASE(band_map);
-		RELEASE(block_buf_data);
-		GDALClose((GDALDatasetH) pca_dataset);
-
-		CAlgProcessTime::Alg_end("减去均值（ENVI）");
-	}// is_like_envi
 
 	return RE_SUCCESS;
 }

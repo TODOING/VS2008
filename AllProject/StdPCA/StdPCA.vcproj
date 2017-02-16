@@ -189,6 +189,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\mnf.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\pca.cpp"
 				>
 			</File>
@@ -215,15 +219,15 @@
 				>
 			</File>
 			<File
+				RelativePath=".\mnf.h"
+				>
+			</File>
+			<File
 				RelativePath=".\pca.h"
 				>
 			</File>
 			<File
 				RelativePath=".\statistics_io.h"
-				>
-			</File>
-			<File
-				RelativePath=".\test.h"
 				>
 			</File>
 		</Filter>
