@@ -2,6 +2,7 @@
 #include "pca.h"
 #include "AlgProcessTime.h"
 #include "mnf.h"
+#include "ssdc.h"
 
 int main()
 {
@@ -23,11 +24,11 @@ int main()
 	const char *pca_file = "D:\\Data\\PCA\\Temp\\my\\can_tmr_my6_new_21.tif";
 	const char *statistic_file = "D:\\Data\\PCA\\Temp\\my\\can_tmr6_new_21.sta";
 
-	//const char *src_file = "D:\\Data\\PCA\\EO1H1320422004339110PZ_B.img";
-	//const char *pca_file = "D:\\Data\\PCA\\Temp\\my\\EO1H1320422004339110PZ_B_my163_Float32_2.tif";
-	//const char *statistic_file = "D:\\Data\\PCA\\Temp\\my\\EO1H1320422004339110PZ_B_my163_Float32_2.sta";
+	/*const char *src_file = "D:\\Data\\PCA\\EO1H1320422004339110PZ_B.img";
+	const char *pca_file = "D:\\Data\\PCA\\Temp\\my\\EO1H1320422004339110PZ_B_my163_Float32_2.tif";
+	const char *statistic_file = "D:\\Data\\PCA\\Temp\\my\\EO1H1320422004339110PZ_B_my163_Float32_2.sta";*/
 
-	//const char *src_file = "D:\\Data\\PCA\\CASI_2012_09_08_145508_g_BSQ.img";
+	//const char *src_file = "D:\\Data\\PCA\\CASI_2012_09_08_145508_g.img";
 	//const char *pca_file = "D:\\Data\\PCA\\Temp\\my\\CASI_2012_09_08_145508_g_my6_BSQ_5.tif";
 	//const char *statistic_file = "D:\\Data\\PCA\\Temp\\my\\CASI_2012_09_08_145508_g_my6_BSQ_5.sta";
 
@@ -47,8 +48,14 @@ int main()
 	pca.ExecuteInversePCA(inverse_pca_file, statistic_file, GDT_Byte);
 	CAlgProcessTime::Alg_end("执行InversePCA算法总耗时为");*/
 
-	MNF mnf(src_file);
-	mnf.ExecuteMNF(pca_file, statistic_file, 6, GDT_Float32);
+	//MNF mnf(src_file);
+	//mnf.ExecuteMNF(pca_file, statistic_file, 6, GDT_Float32);
+
+	/************************************************************************/
+	/*					SSDC算法                                                                     */
+	/************************************************************************/
+	SSDC ssdc(src_file);
+	ssdc.ExecuteSSDC(pca_file, statistic_file, 6, GDT_Float32);
 
 	system("pause");
 	return 0;

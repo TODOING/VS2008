@@ -197,6 +197,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\ssdc.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\statistics_io.cpp"
 				>
 			</File>
@@ -224,6 +228,10 @@
 			</File>
 			<File
 				RelativePath=".\pca.h"
+				>
+			</File>
+			<File
+				RelativePath=".\ssdc.h"
 				>
 			</File>
 			<File
