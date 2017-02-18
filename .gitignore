@@ -33,3 +33,8 @@ AllProject/OutDir/Release/StdPCA.exe
 AllProject/StdPCA/StdPCA.vcproj.pl-PC.pl.user
 AllProject/IntDir/Debug/StdPCA/mnf.obj
 AllProject/IntDir/Debug/StdPCA/ssdc.obj
+AllProject/IntDir/Release/StdPCA/mnf.obj
+AllProject/IntDir/Release/StdPCA/ssdc.obj
+AllProject/OutDir/Release/StdPCA.exp
+AllProject/OutDir/Release/StdPCA.lib
+AllProject/OutDir/Release/StdPCA.pdb
